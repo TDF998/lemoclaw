@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>LemoClaw · AI自动化助手</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #05070C;
+            color: #EDF2F9;
+            line-height: 1.5;
+            scroll-behavior: smooth;
+        }
+
+        /* 自定义滚动条 */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #11141F;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2F3A5C;
+            border-radius: 10px;
+        }
+
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 32px;
+        }
+
+        /* 导航 */
+        .navbar {
+            padding: 18px 0;
+            border-bottom: 1px solid #1A1F2E;
+            backdrop-filter: blur(12px);
+            background: rgba(5, 7, 12, 0.85);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .nav-links a:hover, .nav-links a.active {
+            color: white;
+        }
+        .nav-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .logo-icon {
+            background: linear-gradient(135deg, #303652, #1d2133);
+            width: 38px;
+            height: 38px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #383e53;
+            font-size: 22px;
+            box-shadow: 0 6px 16px rgba(240, 101, 67, 0.3);
+        }
+        .logo-text {
+            font-size: 26px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: linear-gradient(120deg, #FFFFFF, #FFB485);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .badge {
+            background: #1E293B;
+            padding: 4px 12px;
+            border-radius: 40px;
+            font-size: 12px;
+            font-weight: 500;
+            color: #FFB485;
+        }
+        .nav-links {
+            display: flex;
+            gap: 28px;
+            align-items: center;
+        }
+        .nav-links a {
+            color: #B9C3E6;
+            text-decoration: none;
+            font-weight: 500;
+            transition: 0.2s;
+            font-size: 15px;
+        }
+        .nav-links a:hover {
+            color: white;
+        }
+        .btn-outline {
+            border: 1px solid #3E4A6F;
+            background: transparent;
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-weight: 500;
+            cursor: pointer;
+            color: #EFF3F8;
+        }
+        .btn-primary {
+            background: linear-gradient(95deg, #FF8C5A, #F06543);
+            border: none;
+            padding: 8px 31.3px;
+            border-radius: 40px;
+            font-weight: 600;
+            color: white;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 4px 12px rgba(240, 101, 67, 0.4);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.05);
+        }
+
+        /* Hero 区域 */
+        .hero {
+            padding: 70px 0 40px;
+            text-align: center;
+        }
+        .hero h1 {
+            font-size: 56px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, #FFFFFF, #FFC7A2);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .hero p {
+            font-size: 18px;
+            color: #99A4C9;
+            max-width: 700px;
+            margin: 20px auto 28px;
+        }
+        .cta-buttons {
+            display: flex;
+            gap: 18px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        /* 场景卡片网格 */
+        .section-title {
+            font-size: 32px;
+            font-weight: 700;
+            margin: 56px 0 24px;
+            text-align: center;
+        }
+        .section-sub {
+            text-align: center;
+            color: #8F9AC2;
+            margin-bottom: 48px;
+        }
+        .templates-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 28px;
+            margin-bottom: 70px;
+        }
+        .template-card {
+            background: #0E111B;
+            border: 1px solid #22273C;
+            border-radius: 32px;
+            padding: 28px;
+            transition: all 0.25s;
+        }
+        .template-card:hover {
+            border-color: #F06543;
+            transform: translateY(-6px);
+            box-shadow: 0 20px 30px -15px rgba(0,0,0,0.6);
+        }
+        .card-icon {
+            width: 56px;
+            height: 56px;
+            background: #1A1F2E;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            color: #FF8C5A;
+            margin-bottom: 20px;
+        }
+        .template-card h3 {
+            font-size: 22px;
+            margin-bottom: 12px;
+        }
+        .template-card p {
+            color: #A8B2DC;
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+        .tag-free {
+            background: #1F2A3E;
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 500;
+            color: #B9FBC0;
+        }
+        .tag-pro {
+            background: #F0654322;
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 500;
+            color: #FFB485;
+            border: 0.5px solid #F06543;
+        }
+        .use-btn {
+            margin-top: 20px;
+            width: 100%;
+            background: #1B212F;
+            border: none;
+            padding: 12px;
+            border-radius: 40px;
+            font-weight: 600;
+            color: #DBE3FF;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .use-btn:hover {
+            background: #F06543;
+            color: white;
+        }
+
+        /* 可视化编辑器预览区 */
+        .editor-preview {
+            background: linear-gradient(145deg, #080B12, #0A0E18);
+            border-radius: 48px;
+            border: 1px solid #292F48;
+            padding: 40px;
+            margin: 40px 0 60px;
+        }
+        .editor-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+        .drag-badge {
+            background: #1E253F;
+            padding: 6px 16px;
+            border-radius: 30px;
+            font-size: 13px;
+        }
+        .flow-row {
+            background: #0F131F;
+            border-radius: 24px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+            border-left: 4px solid #FF8C5A;
+        }
+        .trigger-box, .action-box {
+            background: #191F2E;
+            padding: 10px 18px;
+            border-radius: 60px;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .arrow-icon {
+            color: #FF8C5A;
+            font-size: 20px;
+        }
+
+        /* 会员定价 */
+        .pricing {
+            display: flex;
+            justify-content: center;
+            gap: 32px;
+            flex-wrap: wrap;
+            margin: 60px 0 40px;
+        }
+        .plan {
+            background: #0C0F18;
+            border: 1px solid #262D46;
+            border-radius: 36px;
+            padding: 32px;
+            width: 300px;
+            text-align: center;
+        }
+        .plan.popular {
+            border-color: #F06543;
+            background: #0F1320;
+        }
+        .price {
+            font-size: 42px;
+            font-weight: 800;
+            margin: 20px 0;
+        }
+        .price small {
+            font-size: 16px;
+            font-weight: 400;
+        }
+        .feature-list {
+            list-style: none;
+            margin: 24px 0;
+            text-align: left;
+        }
+        .feature-list li {
+            margin: 12px 0;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .footer {
+            border-top: 1px solid #181E2C;
+            padding: 40px 0;
+            text-align: center;
+            color: #6C738F;
+            font-size: 14px;
+        }
+
+        .toast-msg {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1F2A3F;
+            backdrop-filter: blur(12px);
+            padding: 12px 28px;
+            border-radius: 60px;
+            color: white;
+            font-weight: 500;
+            z-index: 200;
+            border-left: 4px solid #FF8C5A;
+            transition: opacity 0.2s;
+            pointer-events: none;
+        }
+
+        @media (max-width: 780px) {
+            .container {
+                padding: 0 20px;
+            }
+            .hero h1 {
+                font-size: 38px;
+            }
+        }
+
+        /* 手机端导航适配 - 添加到现有样式末尾 */
+
+/* 移动端断点 */
+@media (max-width: 768px) {
+    /* 导航栏容器调整 */
+    .navbar {
+        padding: 12px 0;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+    }
+    
+    .nav-inner {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        position: relative;
+        gap: 12px;
+    }
+    
+    /* Logo 区域调整 */
+    .logo-area {
+        flex-shrink: 0;
+    }
+    
+    .logo-icon {
+        width: 32px;
+        height: 32px;
+        font-size: 18px;
+    }
+    
+    .logo-text {
+        font-size: 20px;
+    }
+    
+    .badge, .logo-badge {
+        font-size: 10px;
+        padding: 2px 8px;
+    }
+    
+    /* 导航链接 - 默认隐藏，改为汉堡菜单 */
+    .nav-links {
+        position: fixed;
+        top: 0;
+        right: -280px;
+        width: 260px;
+        height: 100vh;
+        background: rgba(10, 12, 18, 0.98);
+        backdrop-filter: blur(16px);
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: flex-start;
+        padding: 80px 24px 24px;
+        gap: 20px;
+        transition: right 0.3s ease;
+        z-index: 1001;
+        border-left: 1px solid #2A2F42;
+        box-shadow: -5px 0 30px rgba(0, 0, 0, 0.5);
+    }
+    
+    .nav-links.active {
+        right: 0;
+    }
+    
+    .nav-links a {
+        font-size: 16px;
+        padding: 8px 0;
+        width: 100%;
+        border-bottom: 1px solid #2A2F42;
+    }
+    
+    .nav-links button {
+        width: 100%;
+        margin-top: 8px;
+    }
+    
+    /* 汉堡菜单按钮 */
+    .menu-toggle {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        width: 28px;
+        height: 20px;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        z-index: 1002;
+        position: relative;
+    }
+    
+    .menu-toggle span {
+        width: 100%;
+        height: 2px;
+        background: #EFF3F8;
+        border-radius: 2px;
+        transition: all 0.3s ease;
+    }
+    
+    /* 汉堡菜单动画 - 打开状态 */
+    .menu-toggle.active span:nth-child(1) {
+        transform: translateY(9px) rotate(45deg);
+    }
+    
+    .menu-toggle.active span:nth-child(2) {
+        opacity: 0;
+    }
+    
+    .menu-toggle.active span:nth-child(3) {
+        transform: translateY(-9px) rotate(-45deg);
+    }
+    
+    /* 遮罩层 */
+    .menu-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(4px);
+        z-index: 1000;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+    }
+    
+    .menu-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+    
+    /* 按钮样式微调 */
+    .nav-links .btn-outline-light,
+    .nav-links .btn-outline {
+        background: rgba(30, 36, 56, 0.9);
+        border: 1px solid #3E4A6B;
+    }
+    
+    .nav-links .btn-primary {
+        background: linear-gradient(95deg, #FF8C5A, #F06543);
+    }
+}
+
+/* 平板设备适配 (769px - 1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .nav-links {
+        gap: 20px;
+    }
+    
+    .nav-links a {
+        font-size: 14px;
+    }
+    
+    .btn-outline-light, .btn-outline, .btn-primary {
+        padding: 6px 16px;
+        font-size: 13px;
+    }
+}
+
+/* 桌面端默认隐藏汉堡菜单 */
+@media (min-width: 769px) {
+    .menu-toggle {
+        display: none;
+    }
+    
+    .menu-overlay {
+        display: none;
+    }
+}
+    </style>
+</head>
+<body>
+    <!-- 遮罩层-->
+    <div class="menu-overlay" id="menuOverlay"></div>
+<div class="navbar">
+    <div class="container nav-inner">
+        <div class="logo-area">
+            <div class="logo-icon"><i><img style="margin-top: 9px;" src="icon/logo.png" width="30px"></i></div>
+            <div class="logo-text">LemoClaw</div>
+            <div class="badge">AI 自动化助手</div>
+        </div>
+        <!-- 适配移动端 -->
+        <button class="menu-toggle" id="menuToggle">
+            <span></span>
+            <span></span>
+             <span></span>
+        </button>
+        
+        <div class="nav-links">
+            <a href="index.html" class="active">首页</a>
+            <a href="Knowledgebase.html">生态知识库</a>
+            <a href="Plugin.html">插件生态平台</a>
+            <button class="btn-outline" id="loginBtn">登录</button>
+            <button class="btn-primary" id="startFreeBtn">免费试用</button>
+        </div>
+    </div>
+</div>
+    
+<main>
+    <div class="container">
+        <!-- Hero 主视觉 -->
+        <div class="hero">
+            <h1>不用写代码，也能做自动化</h1>
+            <p>拖拽搭建自动化流程 · 基于 OpenClaw 引擎，让 AI 帮你处理 Excel、写文案、抓网页<br>零门槛，普通职场人也能秒变效率高手</p>
+            <div class="cta-buttons">
+                <button class="btn-primary" id="openEditorBtn"><i class="fas fa-mouse-pointer"></i> 立即体验可视化编辑器</button>
+                <button class="btn-outline" id="viewDemoBtn"><i class="fas fa-play-circle"></i> 观看演示视频</button>
+            </div>
+        </div>
+
+        <!-- 场景化模板区块 (办公/创作/生活) -->
+        <div class="section-title">🔥 开箱即用的场景模板</div>
+        <div class="section-sub">覆盖职场、自媒体、生活高频场景，一键启动自动化</div>
+        
+        <div class="templates-grid" id="templatesGrid">
+            <!-- 动态js生成模板卡片，但直接静态填充并混合动态事件 -->
+        </div>
+
+        <!-- 可视化编辑器概念展示 -->
+        <div class="editor-preview">
+            <div class="editor-header">
+                <span class="drag-badge"><i class="fas fa-arrows-alt"></i> 拖拽式编辑器 · 无需代码</span>
+                <button class="btn-primary" id="createFlowBtn" style="padding: 8px 20px; font-size: 13px;"><i class="fas fa-plus-circle"></i> 新建自动化流程</button>
+            </div>
+            <div class="flow-row">
+                <div class="trigger-box"><i class="fas fa-clock"></i> 触发条件： 定时 (每天 9:00)</div>
+                <i class="fas fa-arrow-right arrow-icon"></i>
+                <div class="action-box"><i class="fas fa-file-excel"></i> 执行动作： Excel 表格整理 → 发送邮件</div>
+                <span style="margin-left: auto; background:#242B42; border-radius:30px; padding:4px 12px; font-size:12px;">已启用</span>
+            </div>
+            <div class="flow-row">
+                <div class="trigger-box"><i class="fas fa-upload"></i> 触发条件： 文件上传 (监控文件夹)</div>
+                <i class="fas fa-arrow-right arrow-icon"></i>
+                <div class="action-box"><i class="fas fa-language"></i> 执行动作： AI文案生成 + 发布到飞书</div>
+                <span style="margin-left: auto; background:#242B42; border-radius:30px; padding:4px 12px; font-size:12px;">草稿</span>
+            </div>
+            <div class="flow-row">
+                <div class="trigger-box"><i class="fas fa-envelope"></i> 触发条件： 收到新邮件</div>
+                <i class="fas fa-arrow-right arrow-icon"></i>
+                <div class="action-box"><i class="fas fa-robot"></i> 执行动作： AI 自动回复 + 日程创建</div>
+                <span style="margin-left: auto; background:#242B42; border-radius:30px; padding:4px 12px; font-size:12px;">已启用</span>
+            </div>
+            <div style="text-align: center; margin-top: 24px; color:#FFB485; font-size:14px;"><i class="fas fa-grip-lines"></i> 支持任意组合触发 & 动作，生成适配 OpenClaw 脚本</div>
+        </div>
+
+        <!-- 会员体系 / 定价 -->
+        <div class="section-title" id="pricing">🎯 选择适合你的方案</div>
+        <div class="section-sub">免费版即可体验核心自动化，会员解锁无限可能</div>
+        <div class="pricing">
+            <div class="plan">
+                <h3>免费版</h3>
+                <div class="price">¥0 <small>/ 永久</small></div>
+                <ul class="feature-list">
+                    <li><i class="fas fa-check-circle" style="color:#FF8C5A;"></i> 基础模板 5+ 个</li>
+                    <li><i class="fas fa-check-circle" style="color:#FF8C5A;"></i> 每日执行 20 次</li>
+                    <li><i class="fas fa-check-circle" style="color:#FF8C5A;"></i> 云端保存 3 个自动化</li>
+                    <li><i class="fas fa-times-circle" style="color:#6C738F;"></i> 高级AI模型</li>
+                </ul>
+                <button class="use-btn free-start">开始免费使用</button>
+            </div>
+            <div class="plan popular">
+                <div style="background:#F06543; display:inline-block; padding:2px 12px; border-radius:40px; font-size:12px;">🔥 最受欢迎</div>
+                <h3>ClawBuddy Pro</h3>
+                <div class="price">¥9.9 <small>/ 月</small></div>
+                <ul class="feature-list">
+                    <li><i class="fas fa-check-circle" style="color:#FF8C5A;"></i> 全部高级模板 (20+)</li>
+                    <li><i class="fas fa-check-circle" style="color:#FF8C5A;"></i> 无限执行次数</li>
+                    <li><i class="fas fa-check-circle" style="color:#FF8C5A;"></i> 云端同步 + 多设备</li>
+                    <li><i class="fas fa-check-circle" style="color:#FF8C5A;"></i> 专属客服 & 优先支持</li>
+                </ul>
+                <button class="btn-primary" style="width:100%;" id="proSubscribeBtn">升级至 Pro · 9.9/月</button>
+            </div>
+            <div class="plan">
+                <h3>企业定制</h3>
+                <div class="price">定制报价</div>
+                <ul class="feature-list">
+                    <li><i class="fas fa-check-circle"></i> 私有化部署 OpenClaw</li>
+                    <li><i class="fas fa-check-circle"></i> 企业专属插件开发</li>
+                    <li><i class="fas fa-check-circle"></i> SLA 保障</li>
+                </ul>
+                <button class="use-btn" id="contactSales">联系销售</button>
+            </div>
+        </div>
+        <div style="text-align: center; margin-bottom: 60px; font-size: 14px; background:#0A0D16; padding: 14px; border-radius: 48px;">
+            <i class="fas fa-cloud-upload-alt"></i> 无需部署本地环境 · 自动化脚本一键同步 OpenClaw 生态
+        </div>
+    </div>
+</main>
+
+<div class="footer">
+    <div class="container">
+        <p>© 2026 LemoClaw — 让 AI 自动化触手可及，人人都是效率专家</p>
+        <p style="margin-top: 12px; font-size: 12px;">基于 OpenClaw 引擎 | 可视化拖拽 | 云同步 | 会员体系 9.9/月起</p>
+    </div>
+</div>
+
+<script>
+    // 模板数据（办公/创作/生活）
+    const templates = [
+        { name: "📬 邮件自动回复", category: "办公场景", desc: "智能回复邮件，支持自定义模板，节省大量时间", type: "free", icon: "fas fa-envelope-open-text" },
+        { name: "📊 Excel 智能整理", category: "办公场景", desc: "一键清洗表格、合并数据、生成图表报告", type: "free", icon: "fas fa-table" },
+        { name: "🎨 PPT 自动生成", category: "办公场景", desc: "输入主题，AI 自动排版生成演示文稿", type: "pro", icon: "fas fa-chalkboard" },
+        { name: "✍️ 文案改写助手", category: "创作场景", desc: "改写/扩写/润色，适配小红书/公众号风格", type: "free", icon: "fas fa-pen-fancy" },
+        { name: "🖼️ 图片批量处理", category: "创作场景", desc: "裁剪/滤镜/压缩，一键批量处理上千张图", type: "pro", icon: "fas fa-images" },
+        { name: "🎬 视频字幕生成", category: "创作场景", desc: "自动识别语音生成字幕，支持SRT导出", type: "pro", icon: "fas fa-closed-captioning" },
+        { name: "📦 快递智能查询", category: "生活场景", desc: "输入单号自动追踪物流，推送签收提醒", type: "free", icon: "fas fa-truck" },
+        { name: "📅 日程提醒助手", category: "生活场景", desc: "连接日历，自动提醒待办/会议/纪念日", type: "free", icon: "fas fa-calendar-alt" },
+        { name: "💰 账单统计管家", category: "生活场景", desc: "导入账单自动分类，生成月度消费报告", type: "pro", icon: "fas fa-chart-pie" }
+    ];
+
+    function renderTemplates() {
+        const grid = document.getElementById("templatesGrid");
+        if (!grid) return;
+        grid.innerHTML = templates.map(tpl => `
+            <div class="template-card">
+                <div class="card-icon"><i class="${tpl.icon}"></i></div>
+                <h3>${tpl.name}</h3>
+                <p>${tpl.desc}</p>
+                <div style="margin-bottom: 14px;">
+                    ${tpl.type === 'free' ? '<span class="tag-free"><i class="fas fa-gem"></i> 免费使用</span>' : '<span class="tag-pro"><i class="fas fa-crown"></i> Pro 专享</span>'}
+                </div>
+                <button class="use-btn" data-template='${JSON.stringify(tpl)}'>一键启动自动化</button>
+            </div>
+        `).join('');
+        // 绑定按钮事件
+        document.querySelectorAll('.use-btn[data-template]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const tplData = JSON.parse(btn.getAttribute('data-template'));
+                if (tplData.type === 'pro') {
+                    showToast(`✨ ${tplData.name} 为Pro会员专享模板，升级会员 ¥9.9/月 立即解锁高级自动化`, false);
+                } else {
+                    showToast(`🚀 正在启动「${tplData.name}」自动化流程，基于可视化编辑器生成脚本...`, false);
+                    setTimeout(() => {
+                        showToast(`✅ 已创建自动化任务，您可在「我的自动化」中查看实时运行状态`, false);
+                    }, 1500);
+                }
+            });
+        });
+    }
+
+    // 简单提示
+    let toastTimer = null;
+    function showToast(msg, isError = false) {
+        const exist = document.querySelector('.toast-msg');
+        if(exist) exist.remove();
+        const toast = document.createElement('div');
+        toast.className = 'toast-msg';
+        toast.innerHTML = `<i class="fas ${isError ? 'fa-exclamation-triangle' : 'fa-circle-check'}" style="margin-right: 12px;"></i>${msg}`;
+        if(isError) toast.style.borderLeftColor = "#FF6B6B";
+        document.body.appendChild(toast);
+        if(toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => {
+            toast.style.opacity = "0";
+            setTimeout(() => toast.remove(), 300);
+        }, 2800);
+    }
+
+    // 编辑器/会员相关交互
+    function initInteractions() {
+        const openEditor = document.getElementById('openEditorBtn');
+        const createFlow = document.getElementById('createFlowBtn');
+        const startFree = document.getElementById('startFreeBtn');
+        const proSub = document.getElementById('proSubscribeBtn');
+        const contactSales = document.getElementById('contactSales');
+        const viewDemo = document.getElementById('viewDemoBtn');
+        const loginBtn = document.getElementById('loginBtn');
+
+        if(openEditor) openEditor.addEventListener('click', () => showToast("🎨 可视化编辑器即将开放内测，拖拽式配置「触发+动作」，一键生成 OpenClaw 脚本", false));
+        if(createFlow) createFlow.addEventListener('click', () => showToast("✨ 新建自动化流程: 选择触发条件（定时/文件/邮件） + 执行动作（AI/Excel/通知），无需代码", false));
+        if(startFree) startFree.addEventListener('click', () => showToast("🎉 免费版已激活，可体验 5 个基础模板，每日 20 次执行，立即开始自动化之旅", false));
+        if(proSub) proSub.addEventListener('click', () => showToast("🔥 升级 ClawBuddy Pro · 9.9/月，解锁无限次数+高级模板，支持支付宝/微信支付 (模拟演示)", false));
+        if(contactSales) contactSales.addEventListener('click', () => showToast("📩 企业定制方案: 专属插件开发 + 私有化 OpenClaw 部署，请联系 sales@clawbuddy.com", false));
+        if(viewDemo) viewDemo.addEventListener('click', () => showToast("📺 演示视频: 0代码搭建邮件自动回复 & Excel 报表自动化，点击下方链接观看完整教程", false));
+        if(loginBtn) loginBtn.addEventListener('click', () => showToast("🔐 登录后可保存自动化模板，多端同步，体验云端执行 (支持 Google/GitHub 登录)", false));
+        
+        // 免费试用按钮额外绑定
+        const freeStartBtns = document.querySelectorAll('.free-start');
+        freeStartBtns.forEach(btn => btn.addEventListener('click', () => showToast("🎈 免费版已就绪，每天可运行自动化 20 次，基础模板免费开放", false)));
+    }
+
+    // 模拟云端同步 & 会员体系的宣传
+    function addExtraEffects() {
+        console.log("ClawBuddy SaaS 概念版 | 个人AI自动化降低 OpenClaw 门槛");
+        // 可以为"拖拽式编辑器"增加点击hover效果等
+        const flowRows = document.querySelectorAll('.flow-row');
+        flowRows.forEach(row => {
+            row.addEventListener('click', () => {
+                showToast("✏️ 点击可编辑此自动化流，修改触发条件或执行动作 (可视化编辑器体验)", false);
+            });
+        });
+    }
+    // 移动端菜单交互 - 添加到现有 script 中
+function initMobileMenu() {
+    const menuToggle = document.getElementById('menuToggle');
+    const navLinks = document.querySelector('.nav-links');
+    const overlay = document.getElementById('menuOverlay');
+    
+    if (!menuToggle || !navLinks || !overlay) return;
+    
+    function closeMenu() {
+        menuToggle.classList.remove('active');
+        navLinks.classList.remove('active');
+        overlay.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+    
+    function openMenu() {
+        menuToggle.classList.add('active');
+        navLinks.classList.add('active');
+        overlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+    
+    menuToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (navLinks.classList.contains('active')) {
+            closeMenu();
+        } else {
+            openMenu();
+        }
+    });
+    
+    overlay.addEventListener('click', closeMenu);
+    
+    // 点击导航链接后自动关闭菜单
+    const navItems = navLinks.querySelectorAll('a, button');
+    navItems.forEach(item => {
+        item.addEventListener('click', () => {
+            closeMenu();
+        });
+    });
+    
+    // 窗口大小改变时，如果变成桌面视图且菜单打开，自动关闭
+    window.addEventListener('resize', () => {
+        if (window.innerWidth > 768 && navLinks.classList.contains('active')) {
+            closeMenu();
+        }
+    });
+}
+
+// 在 DOMContentLoaded 事件中调用
+document.addEventListener('DOMContentLoaded', () => {
+    initMobileMenu();
+});
+
+    // 页面加载渲染
+    document.addEventListener('DOMContentLoaded', () => {
+        renderTemplates();
+        initInteractions();
+        addExtraEffects();
+    });
+</script>
+</body>
+</html>

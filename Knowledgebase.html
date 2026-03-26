@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <title>Lemo Claw生态知识库</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #05070C;
+            color: #EDF2F9;
+            line-height: 1.5;
+            scroll-behavior: smooth;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #11141F;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2F3A5C;
+            border-radius: 10px;
+        }
+
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 32px;
+        }
+
+        /* ========= 导航样式 + 移动端适配 ========= */
+        .navbar {
+            padding: 18px 0;
+            border-bottom: 1px solid #1A1F2E;
+            backdrop-filter: blur(12px);
+            background: rgba(5, 7, 12, 0.92);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        .nav-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+            position: relative;
+        }
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+        .logo-icon {
+            background: linear-gradient(135deg,  #303652, #1d2133);
+            width: 38px;
+            height: 38px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #383e53;
+            font-size: 22px;
+            box-shadow: 0 6px 14px rgba(45, 156, 219, 0.3);
+        }
+        .logo-text {
+            font-size: 26px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: linear-gradient(120deg, #FFFFFF, #8FCBFF);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .badge {
+            background: #1E2A3A;
+            padding: 3px 10px;
+            border-radius: 40px;
+            font-size: 11px;
+            font-weight: 500;
+            color: #8FCBFF;
+        }
+
+        /* 桌面端导航链接 */
+        .nav-links {
+            display: flex;
+            gap: 28px;
+            align-items: center;
+        }
+        .nav-links a {
+            color: #B9C3E6;
+            text-decoration: none;
+            font-weight: 500;
+            transition: 0.2s;
+            font-size: 15px;
+        }
+        .nav-links a:hover, .nav-links a.active {
+            color: white;
+        }
+        .btn-outline {
+            border: 1px solid #3E4A6F;
+            background: transparent;
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-weight: 500;
+            cursor: pointer;
+            color: #EFF3F8;
+        }
+        .btn-primary {
+            background: linear-gradient(95deg, #2D9CDB, #0F5B9C);
+            border: none;
+            padding: 8px 31.3px;
+            border-radius: 40px;
+            font-weight: 600;
+            color: white;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 4px 12px rgba(45, 156, 219, 0.3);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.05);
+        }
+
+        /* 移动端汉堡菜单 + 遮罩 (自适应) */
+        .menu-toggle {
+            display: none;
+            flex-direction: column;
+            justify-content: space-between;
+            width: 28px;
+            height: 20px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            z-index: 1002;
+        }
+        .menu-toggle span {
+            width: 100%;
+            height: 2px;
+            background: #EFF3F8;
+            border-radius: 2px;
+            transition: all 0.3s ease;
+        }
+        .menu-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 20px;
+            }
+            
+            .navbar {
+                padding: 12px 0;
+            }
+            .logo-text {
+                font-size: 20px;
+            }
+            .logo-icon {
+                width: 32px;
+                height: 32px;
+                font-size: 18px;
+            }
+            .badge {
+                font-size: 9px;
+                padding: 2px 8px;
+            }
+            .menu-toggle {
+                display: flex;
+            }
+            .nav-links {
+                position: fixed;
+                top: 0;
+                right: -280px;
+                width: 270px;
+                height: 100vh;
+                background: rgba(8, 11, 20, 0.98);
+                backdrop-filter: blur(20px);
+                flex-direction: column;
+                justify-content: flex-start;
+                align-items: flex-start;
+                padding: 90px 28px 32px;
+                gap: 24px;
+                transition: right 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+                z-index: 1001;
+                border-left: 1px solid #2A2F48;
+                box-shadow: -5px 0 30px rgba(0, 0, 0, 0.6);
+            }
+            .nav-links.active {
+                right: 0;
+            }
+            .nav-links a {
+                font-size: 16px;
+                width: 100%;
+                padding: 8px 0;
+                border-bottom: 1px solid #2A2F48;
+            }
+            .nav-links button {
+                width: 100%;
+                margin-top: 8px;
+            }
+            .menu-toggle.active span:nth-child(1) {
+                transform: translateY(9px) rotate(45deg);
+            }
+            .menu-toggle.active span:nth-child(2) {
+                opacity: 0;
+            }
+            .menu-toggle.active span:nth-child(3) {
+                transform: translateY(-9px) rotate(-45deg);
+            }
+            .menu-overlay.active {
+                opacity: 1;
+                visibility: visible;
+            }
+        }
+
+        /* Hero区域 */
+        .hero {
+            padding: 50px 0 30px;
+            text-align: center;
+        }
+        .hero h1 {
+            font-size: 48px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #FFFFFF, #8FCBFF);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .hero p {
+            font-size: 18px;
+            color: #99A4C9;
+            max-width: 700px;
+            margin: 18px auto;
+        }
+        .search-bar {
+            max-width: 560px;
+            margin: 28px auto 0;
+            background: #0F121D;
+            border: 1px solid #2A2F48;
+            border-radius: 60px;
+            padding: 5px 5px 5px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .search-bar input {
+            background: transparent;
+            border: none;
+            flex: 1;
+            padding: 12px 8px;
+            font-size: 15px;
+            color: white;
+            outline: none;
+        }
+        .search-bar button {
+            background: #1F2A44;
+            border: none;
+            border-radius: 50px;
+            padding: 8px 28px;
+            color: white;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        /* 分类标签 + 卡片网格 */
+        .section-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin: 48px 0 16px;
+        }
+        .cat-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 32px;
+            border-bottom: 1px solid #1F2438;
+            padding-bottom: 12px;
+        }
+        .cat-tab {
+            padding: 6px 20px;
+            border-radius: 40px;
+            background: #11151F;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .cat-tab.active, .cat-tab:hover {
+            background: #2D9CDB;
+            color: white;
+        }
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 28px;
+            margin-bottom: 60px;
+        }
+        .content-card {
+            background: #0E111B;
+            border: 1px solid #242A42;
+            border-radius: 28px;
+            padding: 24px;
+            transition: all 0.25s;
+        }
+        .content-card:hover {
+            border-color: #2D9CDB;
+            transform: translateY(-4px);
+        }
+        .card-tag {
+            display: inline-block;
+            background: #1D2A3F;
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-bottom: 14px;
+        }
+        .content-card h3 {
+            font-size: 20px;
+            margin: 8px 0 10px;
+        }
+        .content-card p {
+            color: #A8B2DC;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        .meta-row {
+            display: flex;
+            gap: 18px;
+            font-size: 12px;
+            color: #6E789B;
+            margin-bottom: 20px;
+        }
+        .btn-sm {
+            background: #1A1F30;
+            border: none;
+            padding: 10px 0;
+            width: 100%;
+            border-radius: 40px;
+            font-weight: 500;
+            color: #D1DBFF;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-sm i {
+            margin-right: 8px;
+        }
+        .btn-sm:hover {
+            background: #2D9CDB;
+            color: white;
+        }
+
+        /* 问答社区预览 + 资源下载区 */
+        .qa-section {
+            background: linear-gradient(125deg, #0A0E18, #080B12);
+            border-radius: 40px;
+            padding: 40px;
+            margin: 30px 0 40px;
+            border: 1px solid #262D46;
+        }
+        .qa-item {
+            display: flex;
+            gap: 16px;
+            padding: 16px 0;
+            border-bottom: 1px solid #1F2438;
+        }
+        .qa-avatar {
+            width: 42px;
+            height: 42px;
+            background: #1F2A44;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .resource-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 24px;
+            margin: 30px 0;
+        }
+        .res-card {
+            background: #0E111B;
+            border-radius: 24px;
+            padding: 20px;
+            border: 1px solid #242A42;
+        }
+        .price-badge {
+            font-size: 18px;
+            font-weight: 700;
+            color: #FFD966;
+        }
+        .btn-outline-sm {
+            background: transparent;
+            border: 1px solid #3E4A6F;
+            padding: 8px;
+            border-radius: 40px;
+            margin-top: 16px;
+            width: 100%;
+            color: white;
+            cursor: pointer;
+        }
+
+        .footer {
+            border-top: 1px solid #181E2C;
+            padding: 40px 0;
+            text-align: center;
+            color: #6C738F;
+            font-size: 14px;
+            margin-top: 40px;
+        }
+        .toast-msg {
+            position: fixed;
+            bottom: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1F2A3F;
+            backdrop-filter: blur(12px);
+            padding: 12px 28px;
+            border-radius: 60px;
+            color: white;
+            font-weight: 500;
+            z-index: 1100;
+            border-left: 4px solid #2D9CDB;
+            pointer-events: none;
+        }
+        @media (max-width: 600px) {
+            .hero h1 { font-size: 32px; }
+            .qa-section { padding: 24px; }
+            .qa-item {
+            display: block;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="menu-overlay" id="menuOverlay"></div>
+<div class="navbar">
+    <div class="container nav-inner">
+        <div class="logo-area">
+            <div class="logo-icon"><i><img style="margin-top: 9px;" src="icon/logo.png" width="30px"></i></div>
+            <div class="logo-text">LemoClaw</div>
+            <div class="badge">官方知识库</div>
+        </div>
+        <button class="menu-toggle" id="menuToggle">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+        <div class="nav-links" id="navLinks">
+            <a href="index.html">首页</a>
+            <a href="Knowledgebase.html"class="active">生态知识库</a>
+            <a href="Plugin.html">插件生态平台</a>
+            <button class="btn-outline" id="loginBtn">登录</button>
+            <button class="btn-primary" id="joinBtn">加入社区</button>
+        </div>
+    </div>
+</div>
+
+<main>
+    <div class="container">
+        <div class="hero">
+            <h1>LemoClaw 第一知识库</h1>
+            <p>教程 · 问答 · 资源 | 从入门到生态贡献者，一站式解决 Claw 自动化难题</p>
+            <div class="search-bar">
+                <input type="text" placeholder="搜索教程、问答或资源..." id="searchInput">
+                <button id="searchBtn"><i class="fas fa-search"></i> 搜一下</button>
+            </div>
+        </div>
+
+        <!-- 教程库分类模块 -->
+        <div class="section-title"><i class="fas fa-book-open"></i> 精选教程</div>
+        <div class="cat-tabs" id="tutorialTabs">
+            <div data-type="all" class="cat-tab active">全部</div>
+            <div data-type="入门" class="cat-tab">🚀 入门教程</div>
+            <div data-type="进阶" class="cat-tab">⚙️ 进阶开发</div>
+            <div data-type="场景" class="cat-tab">🎯 场景实战</div>
+        </div>
+        <div class="cards-grid" id="tutorialsGrid"></div>
+
+        <!-- 问答社区预览区块 -->
+        <div class="qa-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap:wrap; margin-bottom: 20px;">
+                <h2 style="font-size: 26px;"><i class="fas fa-comments"></i> 热门问答 · AI辅助解答</h2>
+                <button class="btn-outline" id="askQuestionBtn" style="padding:6px 18px;">+ 我要提问</button>
+            </div>
+            <div id="qaList"></div>
+            <div style="text-align: center; margin-top: 24px;">
+                <button class="btn-primary" id="moreQaBtn">前往问答社区 →</button>
+            </div>
+        </div>
+
+        <!-- 资源下载 (免费+付费) -->
+        <div class="section-title"><i class="fas fa-download"></i> 热门资源下载</div>
+        <div class="resource-grid" id="resourcesGrid"></div>
+        <div style="text-align: center; margin-bottom: 30px;">
+            <button class="btn-primary" id="creatorCenterBtn"><i class="fas fa-chalkboard-user"></i> 创作者中心 · 发布资源/教程享分成</button>
+        </div>
+    </div>
+</main>
+
+<div class="footer">
+    <div class="container">
+        <p>© 2026 LemoClaw 生态第一知识库 | 教程 | 问答 | 插件脚本资源</p>
+        <p style="margin-top: 12px; font-size:12px;">内容导流至插件平台 & SaaS · 流量变现闭环 | 精品教程 + 资源分成</p>
+    </div>
+</div>
+
+<script>
+    // ---------- 模拟数据 ----------
+    const tutorials = [
+        { title: "5分钟安装OpenClaw (Win/Mac)", type: "入门", desc: "零基础图文+视频教程，避开常见坑，一键配置环境", views: "2.1w", duration: "6分钟" },
+        { title: "第一个自动化脚本Excel报表自动生成", type: "场景", desc: "办公场景实战，触发条件与AI结合", views: "1.2w", duration: "12分钟" },
+        { title: "插件开发从0到1: 自定义工具", type: "进阶", desc: "手把手教你构建OpenClaw插件，上架市场", views: "8.9k", duration: "18分钟" },
+        { title: "微信/飞书消息推送集成教程", type: "场景", desc: "国内IM平台适配，让机器人接入日常工作流", views: "6.5k", duration: "10分钟" },
+        { title: "配置本地AI模型 + OpenClaw 加速", type: "进阶", desc: "使用Ollama部署本地模型，离线自动化", views: "4.2k", duration: "15分钟" },
+        { title: "新手必看：基础命令与配置文件", type: "入门", desc: "快速掌握claw核心概念，告别命令行恐惧", views: "3.4k", duration: "8分钟" }
+    ];
+
+    const qaData = [
+        { id: 1, title: "安装时报错 ‘claw not found’ 怎么解决？", replies: 5, likes: 23, tag: "安装问题" },
+        { id: 2, title: "插件开发如何调试？有没有推荐工具？", replies: 8, likes: 41, tag: "插件开发" },
+        { id: 3, title: "能否让OpenClaw自动处理微信消息？", replies: 12, likes: 67, tag: "生态扩展" },
+        { id: 4, title: "定时任务执行失败，日志怎么看？", replies: 3, likes: 19, tag: "运行问题" }
+    ];
+
+    const resources = [
+        { name: "OpenClaw 官方安装包(最新版)", type: "免费", price: "免费", downloads: "2.3k", icon: "fas fa-box" },
+        { name: "Excel自动化脚本库(20个场景)", type: "付费", price: "¥4.9", downloads: "892", icon: "fas fa-file-excel" },
+        { name: "精品插件包: 小红书/抖音助手", type: "付费", price: "¥9.9", downloads: "1.2k", icon: "fas fa-rocket" },
+        { name: "Claw工具全场景基础脚本合集", type: "免费", price: "免费", downloads: "4.5k", icon: "fas fa-code" }
+    ];
+
+    let currentTutorialType = "all";
+
+    function renderTutorials() {
+        let filtered = tutorials;
+        if(currentTutorialType !== "all") filtered = tutorials.filter(t => t.type === currentTutorialType);
+        const grid = document.getElementById("tutorialsGrid");
+        if(!grid) return;
+        grid.innerHTML = filtered.map(t => `
+            <div class="content-card">
+                <span class="card-tag">${t.type}</span>
+                <h3>${t.title}</h3>
+                <p>${t.desc}</p>
+                <div class="meta-row"><span><i class="fas fa-eye"></i> ${t.views}</span><span><i class="fas fa-clock"></i> ${t.duration}</span></div>
+                <button class="btn-sm watch-tutorial" data-title="${t.title}"><i class="fas fa-play-circle"></i> 立即观看</button>
+            </div>
+        `).join('');
+        document.querySelectorAll('.watch-tutorial').forEach(btn => {
+            btn.addEventListener('click', () => showToast(`🎬 即将播放: ${btn.getAttribute('data-title')} (视频教程，支持图文+短视频)`, false));
+        });
+    }
+
+    function renderQA() {
+        const qaContainer = document.getElementById("qaList");
+        if(!qaContainer) return;
+        qaContainer.innerHTML = qaData.map(q => `
+            <div class="qa-item">
+                <div class="qa-avatar"><i class="fas fa-user-astronaut"></i></div>
+                <div style="flex:1">
+                    <div style="font-weight:600; margin:8px auto;">${q.title}</div>
+                    <div style="display:flex; gap:18px; font-size:12px; color:#8E98BF;"><span><i class="fas fa-reply"></i> ${q.replies} 回答</span><span><i class="fas fa-thumbs-up"></i> ${q.likes}</span><span class="tag">#${q.tag}</span></div>
+                </div>
+                <button class="btn-outline-sm answer-helper" style="width:auto; padding:8px 14px;" data-question="${q.title}">AI 辅助解答</button>
+            </div>
+        `).join('');
+        document.querySelectorAll('.answer-helper').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const qText = btn.getAttribute('data-question');
+                showToast(`🤖 AI助手快速回答: ${qText} —— 常见解决方案已在社区精华帖，点击查看详情`, false);
+            });
+        });
+    }
+
+    function renderResources() {
+        const resGrid = document.getElementById("resourcesGrid");
+        if(!resGrid) return;
+        resGrid.innerHTML = resources.map(r => `
+            <div class="res-card">
+                <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;"><i class="${r.icon}" style="font-size:28px; color:#2D9CDB;"></i><h3>${r.name}</h3></div>
+                <div class="meta-row" style="margin-bottom:12px;"><span><i class="fas fa-download"></i> ${r.downloads}</span><span class="price-badge">${r.price}</span></div>
+                <button class="btn-outline-sm download-res" data-res="${r.name}"><i class="fas fa-cloud-download-alt"></i> ${r.type === '免费' ? '免费下载' : '购买 / 获取'}</button>
+            </div>
+        `).join('');
+        document.querySelectorAll('.download-res').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const resName = btn.getAttribute('data-res');
+                showToast(`📦 正在跳转资源详情: ${resName} (支持积分/付费下载，创作者可获分成)`, false);
+            });
+        });
+    }
+
+    function showToast(msg, isErr = false) {
+        let existing = document.querySelector('.toast-msg');
+        if(existing) existing.remove();
+        const toast = document.createElement('div');
+        toast.className = 'toast-msg';
+        toast.innerHTML = `<i class="fas ${isErr ? 'fa-exclamation-circle' : 'fa-circle-info'}" style="margin-right:10px;"></i>${msg}`;
+        document.body.appendChild(toast);
+        setTimeout(() => { toast.style.opacity = "0"; setTimeout(() => toast.remove(), 300); }, 2800);
+    }
+
+    // 移动端导航交互
+    function initMobileNav() {
+        const menuToggle = document.getElementById('menuToggle');
+        const navLinks = document.getElementById('navLinks');
+        const overlay = document.getElementById('menuOverlay');
+        if(!menuToggle || !navLinks || !overlay) return;
+        const closeMenu = () => {
+            menuToggle.classList.remove('active');
+            navLinks.classList.remove('active');
+            overlay.classList.remove('active');
+            document.body.style.overflow = '';
+        };
+        const openMenu = () => {
+            menuToggle.classList.add('active');
+            navLinks.classList.add('active');
+            overlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        };
+        menuToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if(navLinks.classList.contains('active')) closeMenu();
+            else openMenu();
+        });
+        overlay.addEventListener('click', closeMenu);
+        navLinks.querySelectorAll('a, button').forEach(el => el.addEventListener('click', closeMenu));
+        window.addEventListener('resize', () => {
+            if(window.innerWidth > 768 && navLinks.classList.contains('active')) closeMenu();
+        });
+    }
+
+    // 分类切换、搜索、交互
+    function bindEvents() {
+        const tabs = document.querySelectorAll('.cat-tab');
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                currentTutorialType = tab.getAttribute('data-type');
+                renderTutorials();
+            });
+        });
+        const searchBtn = document.getElementById('searchBtn');
+        const searchInput = document.getElementById('searchInput');
+        const performSearch = () => {
+            const kw = searchInput.value.trim().toLowerCase();
+            if(kw === "") { showToast("请输入关键词搜索教程/问答", false); return; }
+            showToast(`🔍 找到关于“${kw}”的 6 篇教程 + 问答推荐，更多内容请访问社区`, false);
+        };
+        searchBtn.addEventListener('click', performSearch);
+        searchInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') performSearch(); });
+        document.getElementById('askQuestionBtn')?.addEventListener('click', () => showToast("💬 发布新问题，AI 辅助审核 + 社区达人解答 (即将开放)", false));
+        document.getElementById('moreQaBtn')?.addEventListener('click', () => showToast("🌐 跳转完整问答社区，标签筛选/积分打赏系统开发中", false));
+        document.getElementById('creatorCenterBtn')?.addEventListener('click', () => showToast("🏆 创作者中心：发布教程/资源可获流量分成+打赏，优质创作者认证", false));
+        document.getElementById('loginBtn')?.addEventListener('click', () => showToast("🔐 登录后收藏教程、下载资源、参与社区互动", false));
+        document.getElementById('joinBtn')?.addEventListener('click', () => showToast("🎉 欢迎加入 Claw学堂，获取最新资源及创作者扶持计划", false));
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        renderTutorials();
+        renderQA();
+        renderResources();
+        bindEvents();
+        initMobileNav();
+    });
+</script>
+</body>
+</html>

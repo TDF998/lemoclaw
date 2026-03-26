@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Lemo Claw 插件生态平台</title>
+    <!-- Google Fonts & Font Awesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- 基础样式 -->
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0A0C12;
+            background: linear-gradient(135deg, #0A0C12, #121621);
+            color: #EFF3F8;
+            line-height: 1.5;
+            scroll-behavior: smooth;
+        }
+
+        /* 自定义滚动条 */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1A1E2A;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3B4259;
+            border-radius: 8px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #5B6A8C;
+        }
+
+        /* 容器 */
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 32px;
+        }
+
+        /* 头部导航 */
+        .navbar {
+            padding: 18px 0;
+            border-bottom: 1px solid #1F2436;
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+            background: rgba(10, 12, 18, 0.85);
+            z-index: 100;
+        }
+        .nav-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .logo-icon {
+            background: linear-gradient(135deg, #303652, #1d2133);
+            width: 38px;
+            height: 38px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #383e53;
+            font-size: 22px;
+            font-weight: 700;
+            box-shadow: 0 8px 20px rgba(74, 108, 247, 0.3);
+        }
+        .logo-text {
+            font-size: 26px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: linear-gradient(to right, #FFFFFF, #B6C4FF);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .logo-badge {
+            background: #1F2937;
+            padding: 2px 8px;
+            border-radius: 40px;
+            font-size: 12px;
+            font-weight: 500;
+            color: #B9C7FF;
+        }
+        .nav-links {
+            display: flex;
+            gap: 28px;
+            align-items: center;
+        }
+        .nav-links a {
+            color: #CDD9FF;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 15px;
+            transition: 0.2s;
+        }
+        .nav-links a:hover, .nav-links a.active {
+            color: #FFFFFF;
+        }
+        .btn-outline-light {
+            border: 1px solid #3E4A6B;
+            background: transparent;
+            padding: 8px 18px;
+            border-radius: 32px;
+            font-weight: 500;
+            font-size: 14px;
+            color: #EFF3F8;
+            transition: 0.2s;
+            cursor: pointer;
+        }
+        .btn-outline {
+            border: 1px solid #3E4A6F;
+            background: transparent;
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-weight: 500;
+            cursor: pointer;
+            color: #EFF3F8;
+        }
+        .btn-outline-light:hover {
+            background: rgba(124, 106, 255, 0.2);
+            border-color: #7C6AFF;
+        }
+        .btn-primary {
+            background: linear-gradient(95deg, #7C6AFF, #4F6BF0);
+            border: none;
+            padding: 8px 20px;
+            border-radius: 32px;
+            font-weight: 600;
+            font-size: 14px;
+            color: white;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 4px 12px rgba(124, 106, 255, 0.3);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.05);
+        }
+
+        /* Hero 区域 */
+        .hero {
+            padding: 70px 0 40px;
+            text-align: center;
+        }
+        .hero h1 {
+            font-size: 52px;
+            font-weight: 700;
+            letter-spacing: -1px;
+            background: linear-gradient(to right, #FFFFFF, #B1C2FF);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .hero p {
+            font-size: 18px;
+            color: #9AA4BF;
+            max-width: 680px;
+            margin: 20px auto 32px;
+        }
+        .search-bar {
+            max-width: 560px;
+            margin: 0 auto;
+            background: #13161F;
+            border: 1px solid #2A2F42;
+            border-radius: 48px;
+            padding: 6px 6px 6px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .search-bar input {
+            background: transparent;
+            border: none;
+            flex: 1;
+            padding: 12px 8px;
+            font-size: 16px;
+            color: white;
+            outline: none;
+        }
+        .search-bar button {
+            background: #2C3148;
+            border: none;
+            border-radius: 40px;
+            padding: 8px 24px;
+            color: white;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        /* 分类标签 */
+        .categories {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+            margin: 40px 0 20px;
+        }
+        .cat-item {
+            background: #13161F;
+            padding: 8px 22px;
+            border-radius: 40px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #B9C3E6;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+        .cat-item.active, .cat-item:hover {
+            background: #252B3F;
+            border-color: #7C6AFF;
+            color: white;
+        }
+
+        /* 插件卡片网格 */
+        .plugins-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 28px;
+            margin: 40px 0 60px;
+        }
+        .plugin-card {
+            background: #0F111A;
+            border: 1px solid #202433;
+            border-radius: 28px;
+            padding: 24px;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .plugin-card:hover {
+            transform: translateY(-5px);
+            border-color: #3E4A9F;
+            box-shadow: 0 20px 30px -12px rgba(0,0,0,0.5);
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        .plugin-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(145deg, #222838, #191E2C);
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+        }
+        .rating {
+            background: #1E2438;
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #FFC965;
+        }
+        .plugin-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin: 16px 0 8px;
+        }
+        .plugin-desc {
+            font-size: 14px;
+            color: #9BA2BF;
+            margin-bottom: 18px;
+            line-height: 1.45;
+        }
+        .meta-info {
+            display: flex;
+            gap: 16px;
+            font-size: 12px;
+            color: #767E9E;
+            margin-bottom: 20px;
+            border-top: 1px solid #1D212F;
+            padding-top: 16px;
+        }
+        .install-btn {
+            width: 100%;
+            background: #1F253C;
+            border: none;
+            padding: 12px 0;
+            border-radius: 40px;
+            font-weight: 600;
+            color: #D0D9FF;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .install-btn i {
+            font-size: 14px;
+        }
+        .install-btn:hover {
+            background: #7C6AFF;
+            color: white;
+            box-shadow: 0 4px 12px rgba(124,106,255,0.4);
+        }
+
+        /* 开发者中心 CTA */
+        .dev-section {
+            background: linear-gradient(125deg, #0F1220, #0A0C16);
+            border-radius: 48px;
+            padding: 56px 40px;
+            margin: 40px 0 60px;
+            border: 1px solid #252B40;
+            text-align: center;
+        }
+        .dev-section h2 {
+            font-size: 32px;
+            margin-bottom: 16px;
+        }
+        .dev-buttons {
+            margin-top: 28px;
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        /* 页脚 */
+        .footer {
+            border-top: 1px solid #181E2C;
+            padding: 40px 0;
+            text-align: center;
+            color: #6C738F;
+            font-size: 14px;
+        }
+
+        /* 安装toast模拟 */
+        .toast-msg {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1F2937;
+            backdrop-filter: blur(12px);
+            padding: 12px 28px;
+            border-radius: 60px;
+            color: white;
+            font-weight: 500;
+            z-index: 200;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+            border-left: 4px solid #7C6AFF;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+
+        /* 手机端导航适配 - 添加到现有样式末尾 */
+
+/* 移动端断点 */
+@media (max-width: 768px) {
+    /* 导航栏容器调整 */
+    .navbar {
+        padding: 12px 0;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+    }
+    
+    .nav-inner {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        position: relative;
+        gap: 12px;
+    }
+    
+    /* Logo 区域调整 */
+    .logo-area {
+        flex-shrink: 0;
+    }
+    
+    .logo-icon {
+        width: 32px;
+        height: 32px;
+        font-size: 18px;
+    }
+    
+    .logo-text {
+        font-size: 20px;
+    }
+    
+    .badge, .logo-badge {
+        font-size: 10px;
+        padding: 2px 8px;
+    }
+    
+    /* 导航链接 - 默认隐藏，改为汉堡菜单 */
+    .nav-links {
+        position: fixed;
+        top: 0;
+        right: -280px;
+        width: 260px;
+        height: 100vh;
+        background: rgba(10, 12, 18, 0.98);
+        backdrop-filter: blur(16px);
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: flex-start;
+        padding: 80px 24px 24px;
+        gap: 20px;
+        transition: right 0.3s ease;
+        z-index: 1001;
+        border-left: 1px solid #2A2F42;
+        box-shadow: -5px 0 30px rgba(0, 0, 0, 0.5);
+    }
+    
+    .nav-links.active {
+        right: 0;
+    }
+    
+    .nav-links a {
+        font-size: 16px;
+        padding: 8px 0;
+        width: 100%;
+        border-bottom: 1px solid #2A2F42;
+    }
+    
+    .nav-links button {
+        width: 100%;
+        margin-top: 8px;
+    }
+    
+    /* 汉堡菜单按钮 */
+    .menu-toggle {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        width: 28px;
+        height: 20px;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        z-index: 1002;
+        position: relative;
+    }
+    
+    .menu-toggle span {
+        width: 100%;
+        height: 2px;
+        background: #EFF3F8;
+        border-radius: 2px;
+        transition: all 0.3s ease;
+    }
+    
+    /* 汉堡菜单动画 - 打开状态 */
+    .menu-toggle.active span:nth-child(1) {
+        transform: translateY(9px) rotate(45deg);
+    }
+    
+    .menu-toggle.active span:nth-child(2) {
+        opacity: 0;
+    }
+    
+    .menu-toggle.active span:nth-child(3) {
+        transform: translateY(-9px) rotate(-45deg);
+    }
+    
+    /* 遮罩层 */
+    .menu-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(4px);
+        z-index: 1000;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+    }
+    
+    .menu-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+    
+    /* 按钮样式微调 */
+    .nav-links .btn-outline-light,
+    .nav-links .btn-outline {
+        background: rgba(30, 36, 56, 0.9);
+        border: 1px solid #3E4A6B;
+    }
+    
+    .nav-links .btn-primary {
+        background: linear-gradient(95deg, #FF8C5A, #F06543);
+    }
+}
+
+/* 平板设备适配 (769px - 1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .nav-links {
+        gap: 20px;
+    }
+    
+    .nav-links a {
+        font-size: 14px;
+    }
+    
+    .btn-outline-light, .btn-outline, .btn-primary {
+        padding: 6px 16px;
+        font-size: 13px;
+    }
+}
+
+/* 桌面端默认隐藏汉堡菜单 */
+@media (min-width: 769px) {
+    .menu-toggle {
+        display: none;
+    }
+    
+    .menu-overlay {
+        display: none;
+    }
+}
+
+        @media (max-width: 700px) {
+            .container {
+                padding: 0 20px;
+            }
+            .hero h1 {
+                font-size: 36px;
+            }
+            .nav-links {
+                gap: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 遮罩层，放在 navbar 外部，body 内部 -->
+<div class="menu-overlay" id="menuOverlay"></div>
+
+<div id="app">
+    <!-- 导航栏 -->
+    <div class="navbar">
+        <div class="container nav-inner">
+            <div class="logo-area">
+                <div class="logo-icon">
+                    <i><img style="margin-top: 9px;" src="icon/logo.png" width="30px"></i>
+                </div>
+                <div class="logo-text">LemoClaw</div>
+                <div class="logo-badge">插件生态</div>
+            </div>
+            <!-- 适配移动端 -->
+            <button class="menu-toggle" id="menuToggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <div class="nav-links">
+                <a href="index.html">首页</a>
+                <a href="Knowledgebase.html">生态知识库</a>
+                <a href="Plugin.html" class="active">插件生态平台</a>
+                <button class="btn-outline" id="loginBtn">登录</button>
+                <button class="btn-outline-light" id="showDevCenterBtn"><i class="fas fa-cloud-upload-alt"></i> 上传插件</button>
+            </div>
+        </div>
+    </div>
+
+    <main class="container">
+        <!-- Hero 搜索区 -->
+        <div class="hero">
+            <h1>LemoClaw 插件市场</h1>
+            <p>发现、安装、分享强大的插件 · 扩展 OpenClaw 无限可能<br>官方未覆盖场景的「补充性需求」一站解决</p>
+            <div class="search-bar">
+                <input type="text" placeholder="搜索插件名称、功能或标签..." id="searchInput">
+                <button id="searchBtn"><i class="fas fa-search"></i> 搜索</button>
+            </div>
+        </div>
+
+        <!-- 分类筛选区域 -->
+        <div class="categories" id="categoryFilter">
+            <div data-cat="all" class="cat-item active">全部插件</div>
+            <div data-cat="效率办公" class="cat-item">📊 效率办公</div>
+            <div data-cat="内容创作" class="cat-item">✍️ 内容创作</div>
+            <div data-cat="系统工具" class="cat-item">⚙️ 系统工具</div>
+        </div>
+
+        <!-- 插件网格渲染 -->
+        <div class="plugins-grid" id="pluginsGrid">
+            <!-- 动态JS渲染 -->
+        </div>
+
+        <!-- 开发者激励区 -->
+        <div class="dev-section">
+            <i class="fas fa-code-branch" style="font-size: 42px; color:#7C6AFF; margin-bottom: 16px; display: inline-block;"></i>
+            <h2>构建 LemoClaw 生态 · 成为贡献者</h2>
+            <p style="max-width: 600px; margin: 12px auto;">上传您的插件，获取下载收益与影响力。轻量审核，一键上架，让全球开发者使用您的作品。</p>
+            <div class="dev-buttons">
+                <button class="btn-primary" id="goDevCenter"><i class="fas fa-chalkboard-user"></i> 开发者中心</button>
+                <button class="btn-outline-light" id="viewDocs"><i class="fas fa-book-open"></i> 插件开发文档</button>
+            </div>
+            <div style="margin-top: 28px; display: flex; justify-content: center; gap: 32px; font-size: 14px;">
+                <span><i class="fas fa-download"></i> 收益结算</span>
+                <span><i class="fas fa-chart-line"></i> 数据看板</span>
+                <span><i class="fas fa-shield-alt"></i> 安全审核保障</span>
+            </div>
+        </div>
+    </main>
+
+    <div class="footer">
+        <div class="container">
+            <p>© 2026 LemoClaw 插件生态平台 · 助力开源AI工具链 · 让插件触手可及</p>
+            <p style="margin-top: 12px; font-size:12px;">对接 OpenClaw 官方接口 | 一键安装/卸载/更新 | 本地化场景扩展</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ----- 模拟插件数据（MVP 插件库样例）-----
+    const pluginsData = [
+        {
+            id: 1,
+            name: "Excel 智能处理助手",
+            category: "效率办公",
+            desc: "一键自动化 Excel 数据清洗、合并、图表生成，支持公式批量操作，大幅提升办公效率。",
+            rating: 4.8,
+            downloads: "2.3k",
+            version: "v1.2.0",
+            icon: "fas fa-file-excel",
+            hot: true,
+            compatible: "v0.9+"
+        },
+        {
+            id: 2,
+            name: "飞书消息推送器",
+            category: "效率办公",
+            desc: "对接飞书机器人，实现 OpenClaw 任务结果实时推送到飞书群，国内办公场景必备。",
+            rating: 4.9,
+            downloads: "1.7k",
+            version: "v2.0",
+            icon: "fas fa-bell",
+            hot: true,
+            compatible: "v0.8+"
+        },
+        {
+            id: 3,
+            name: "AI 文案创作工坊",
+            category: "内容创作",
+            desc: "基于大模型生成小红书/公众号/营销文案，支持风格定制，快速产出创意内容。",
+            rating: 4.7,
+            downloads: "3.1k",
+            version: "v1.3.1",
+            icon: "fas fa-feather-alt",
+            hot: false,
+            compatible: "v1.0+"
+        },
+        {
+            id: 4,
+            name: "微信对话适配器",
+            category: "系统工具",
+            desc: "打通微信个人号与企业微信，让 OpenClaw 接收微信消息并自动回复，国内生态专用。",
+            rating: 4.6,
+            downloads: "1.2k",
+            version: "v0.9",
+            icon: "fab fa-weixin",
+            hot: true,
+            compatible: "v0.9+"
+        },
+        {
+            id: 5,
+            name: "网页内容抓取器",
+            category: "系统工具",
+            desc: "智能提取任意网页正文、元数据，支持 JS 渲染，适合数据采集与RSS监控。",
+            rating: 4.5,
+            downloads: "980",
+            version: "v1.1",
+            icon: "fas fa-globe",
+            hot: false,
+            compatible: "v0.8+"
+        },
+        {
+            id: 6,
+            name: "DALL·E 图片生成器",
+            category: "内容创作",
+            desc: "集成 OpenAI 图像生成，通过自然语言生成高质量配图，丰富内容创作流程。",
+            rating: 4.9,
+            downloads: "2.5k",
+            version: "v1.0",
+            icon: "fas fa-palette",
+            hot: true,
+            compatible: "v1.1+"
+        },
+        {
+            id: 7,
+            name: "抖音热点追踪",
+            category: "内容创作",
+            desc: "实时获取抖音热门话题、音乐榜单，辅助创作灵感，短视频运营利器。",
+            rating: 4.4,
+            downloads: "650",
+            version: "v0.5",
+            icon: "fab fa-tiktok",
+            hot: false,
+            compatible: "v0.9+"
+        },
+        {
+            id: 8,
+            name: "PDF 文档解析器",
+            category: "效率办公",
+            desc: "OCR提取PDF文本/表格，支持批量处理，科研办公场景高效利器。",
+            rating: 4.7,
+            downloads: "1.4k",
+            version: "v2.1",
+            icon: "fas fa-file-pdf",
+            hot: false,
+            compatible: "v1.0+"
+        }
+    ];
+
+    // 当前筛选分类 & 搜索关键词
+    let currentCategory = "all";
+    let searchKeyword = "";
+
+    // 渲染插件网格
+    function renderPlugins() {
+        let filtered = [...pluginsData];
+        
+        // 分类筛选
+        if (currentCategory !== "all") {
+            filtered = filtered.filter(p => p.category === currentCategory);
+        }
+        // 搜索过滤
+        if (searchKeyword.trim() !== "") {
+            const kw = searchKeyword.trim().toLowerCase();
+            filtered = filtered.filter(p => p.name.toLowerCase().includes(kw) || p.desc.toLowerCase().includes(kw));
+        }
+
+        const grid = document.getElementById("pluginsGrid");
+        if (!grid) return;
+        
+        if (filtered.length === 0) {
+            grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:60px; color:#8F98B5;">没有找到相关插件，<span style="color:#7C6AFF;">去上传您的插件</span> 或尝试其他关键词</div>`;
+            return;
+        }
+        
+        grid.innerHTML = filtered.map(plugin => `
+            <div class="plugin-card" data-id="${plugin.id}">
+                <div class="card-header">
+                    <div class="plugin-icon"><i class="${plugin.icon}"></i></div>
+                    <div class="rating"><i class="fas fa-star" style="font-size:12px;"></i> ${plugin.rating}</div>
+                </div>
+                <div class="plugin-title">${escapeHtml(plugin.name)}</div>
+                <div class="plugin-desc">${escapeHtml(plugin.desc)}</div>
+                <div class="meta-info">
+                    <span><i class="fas fa-download"></i> ${plugin.downloads}</span>
+                    <span><i class="fas fa-code-branch"></i> ${plugin.version}</span>
+                    <span><i class="fas fa-check-circle"></i> ${plugin.compatible}</span>
+                </div>
+                <button class="install-btn" data-plugin='${JSON.stringify(plugin)}'><i class="fas fa-plug"></i> 一键安装</button>
+            </div>
+        `).join('');
+
+        // 绑定安装按钮事件 (事件委托)
+        document.querySelectorAll('.install-btn').forEach(btn => {
+            btn.removeEventListener('click', installHandler);
+            btn.addEventListener('click', installHandler);
+        });
+    }
+
+    function installHandler(e) {
+        e.stopPropagation();
+        let pluginRaw = this.getAttribute('data-plugin');
+        try {
+            const plugin = JSON.parse(pluginRaw);
+            // 模拟调用OpenClaw安装接口 (一键安装)
+            showToast(`正在安装「${plugin.name}」到您的 OpenClaw 环境...`);
+            // 模拟异步安装，2秒后成功
+            setTimeout(() => {
+                showToast(`✅ 成功安装 ${plugin.name}，版本 ${plugin.version} ，已部署至本地 OpenClaw`);
+                // 实际对接时调用后端部署接口: POST /api/install
+            }, 1500);
+        } catch(e) {
+            showToast("安装失败，请检查 OpenClaw 环境配置", true);
+        }
+    }
+
+    // 简易提示
+    let toastTimeout = null;
+    function showToast(msg, isError = false) {
+        let existingToast = document.querySelector('.toast-msg');
+        if(existingToast) existingToast.remove();
+        const toast = document.createElement('div');
+        toast.className = 'toast-msg';
+        toast.innerHTML = `<i class="fas ${isError ? 'fa-exclamation-triangle' : 'fa-circle-check'}" style="margin-right: 10px;"></i>${msg}`;
+        if(isError) toast.style.borderLeftColor = "#FF6B6B";
+        document.body.appendChild(toast);
+        if(toastTimeout) clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(() => {
+            if(toast) toast.style.opacity = "0";
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    // 简易防XSS
+    function escapeHtml(str) {
+        return str.replace(/[&<>]/g, function(m) {
+            if(m === '&') return '&amp;';
+            if(m === '<') return '&lt;';
+            if(m === '>') return '&gt;';
+            return m;
+        }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) {
+            return c;
+        });
+    }
+
+    // 分类点击切换
+    function initCategories() {
+        const cats = document.querySelectorAll('.cat-item');
+        cats.forEach(cat => {
+            cat.addEventListener('click', () => {
+                const catVal = cat.getAttribute('data-cat');
+                if(catVal) {
+                    currentCategory = catVal;
+                    // 高亮样式
+                    cats.forEach(c => c.classList.remove('active'));
+                    cat.classList.add('active');
+                    renderPlugins();
+                }
+            });
+        });
+    }
+
+    // 搜索相关
+    function initSearch() {
+        const searchInput = document.getElementById('searchInput');
+        const searchBtn = document.getElementById('searchBtn');
+        function performSearch() {
+            searchKeyword = searchInput.value;
+            renderPlugins();
+        }
+        searchBtn.addEventListener('click', performSearch);
+        searchInput.addEventListener('keypress', (e) => {
+            if(e.key === 'Enter') performSearch();
+        });
+    }
+
+    // 开发者中心模拟跳转 / 上传插件提示
+    function initDevActions() {
+        const devBtn = document.getElementById('goDevCenter');
+        const uploadBtn = document.getElementById('showDevCenterBtn');
+        const viewDocsBtn = document.getElementById('viewDocs');
+        const openDevPanel = () => {
+            showToast("✨ 开发者中心即将开放：支持插件上传、数据看板、收益结算，敬请期待内测！", false);
+            // 模拟弹窗跳转风格，因为是静态站点展示概念，给用户友好提示
+        };
+        if(devBtn) devBtn.addEventListener('click', openDevPanel);
+        if(uploadBtn) uploadBtn.addEventListener('click', openDevPanel);
+        if(viewDocsBtn) viewDocsBtn.addEventListener('click', () => {
+            showToast("📘 插件开发文档：基于 OpenClaw 插件接口封装 SDK，支持 zip 上传与一键安装规范。");
+        });
+        // 额外适配演示"一键卸载/更新"消息
+        const cards = document.getElementById('pluginsGrid');
+        if(cards) {
+            cards.addEventListener('click', (e) => {
+                // 处理卡片上的右键菜单其实没有，但是展示平台理念
+                if(e.target.closest('.install-btn')) return;
+            });
+        }
+    }
+
+    // 模拟热门插件标注热度
+    function addHotStyles() {
+        // 仅装饰，使UI更符合实际热度筛选（未来可扩展热度排序）
+        // 目前在卡片内显示了下载量及评分 满足筛选热度概念
+    }
+
+    // 页面加载完成渲染
+    document.addEventListener('DOMContentLoaded', () => {
+        renderPlugins();
+        initCategories();
+        initSearch();
+        initDevActions();
+        addHotStyles();
+        // 附加背景光晕装饰
+        console.log("OpenClaw 插件市场启动 | 核心定位：第三方插件应用商店，支持一键安装部署");
+    });
+    // 移动端菜单交互 - 添加到现有 script 中
+function initMobileMenu() {
+    const menuToggle = document.getElementById('menuToggle');
+    const navLinks = document.querySelector('.nav-links');
+    const overlay = document.getElementById('menuOverlay');
+    
+    if (!menuToggle || !navLinks || !overlay) return;
+    
+    function closeMenu() {
+        menuToggle.classList.remove('active');
+        navLinks.classList.remove('active');
+        overlay.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+    
+    function openMenu() {
+        menuToggle.classList.add('active');
+        navLinks.classList.add('active');
+        overlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+    
+    menuToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (navLinks.classList.contains('active')) {
+            closeMenu();
+        } else {
+            openMenu();
+        }
+    });
+    
+    overlay.addEventListener('click', closeMenu);
+    
+    // 点击导航链接后自动关闭菜单
+    const navItems = navLinks.querySelectorAll('a, button');
+    navItems.forEach(item => {
+        item.addEventListener('click', () => {
+            closeMenu();
+        });
+    });
+    
+    // 窗口大小改变时，如果变成桌面视图且菜单打开，自动关闭
+    window.addEventListener('resize', () => {
+        if (window.innerWidth > 768 && navLinks.classList.contains('active')) {
+            closeMenu();
+        }
+    });
+}
+
+// 在 DOMContentLoaded 事件中调用
+document.addEventListener('DOMContentLoaded', () => {
+    initMobileMenu();
+});
+</script>
+</body>
+</html>
