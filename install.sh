@@ -132,3 +132,68 @@ main() {
 
 # 运行
 main
+# ============================================
+# 处理插件参数（在脚本最后面添加）
+# ============================================
+
+PLUGIN=$1
+
+if [ -n "$PLUGIN" ]; then
+    echo
+    info "检测到插件参数: $PLUGIN"
+    
+    # 创建插件目录
+    mkdir -p ~/openclaw/plugins
+    
+    # 根据参数下载对应的插件配置
+    case $PLUGIN in
+        excel)
+            info "正在配置 Excel 智能处理助手..."
+            curl -fsSL https://raw.githubusercontent.com/TDF998/lemoclaw/main/plugins/excel-config.json -o ~/openclaw/plugins/excel.json
+            success "Excel 插件配置已下载"
+            ;;
+        feishu)
+            info "正在配置飞书消息推送器..."
+            curl -fsSL https://raw.githubusercontent.com/TDF998/lemoclaw/main/plugins/feishu-config.json -o ~/openclaw/plugins/feishu.json
+            success "飞书插件配置已下载"
+            ;;
+        ai-copywriter)
+            info "正在配置 AI 文案创作工坊..."
+            curl -fsSL https://raw.githubusercontent.com/TDF998/lemoclaw/main/plugins/ai-copywriter-config.json -o ~/openclaw/plugins/ai-copywriter.json
+            success "AI文案插件配置已下载"
+            ;;
+        wechat)
+            info "正在配置微信对话适配器..."
+            curl -fsSL https://raw.githubusercontent.com/TDF998/lemoclaw/main/plugins/wechat-config.json -o ~/openclaw/plugins/wechat.json
+            success "微信插件配置已下载"
+            ;;
+        web-scraper)
+            info "正在配置网页内容抓取器..."
+            curl -fsSL https://raw.githubusercontent.com/TDF998/lemoclaw/main/plugins/web-scraper-config.json -o ~/openclaw/plugins/web-scraper.json
+            success "网页抓取器配置已下载"
+            ;;
+        dalle)
+            info "正在配置 DALL·E 图片生成器..."
+            curl -fsSL https://raw.githubusercontent.com/TDF998/lemoclaw/main/plugins/dalle-config.json -o ~/openclaw/plugins/dalle.json
+            success "DALL·E 插件配置已下载"
+            ;;
+        douyin)
+            info "正在配置抖音热点追踪..."
+            curl -fsSL https://raw.githubusercontent.com/TDF998/lemoclaw/main/plugins/douyin-config.json -o ~/openclaw/plugins/douyin.json
+            success "抖音插件配置已下载"
+            ;;
+        pdf-parser)
+            info "正在配置 PDF 文档解析器..."
+            curl -fsSL https://raw.githubusercontent.com/TDF998/lemoclaw/main/plugins/pdf-parser-config.json -o ~/openclaw/plugins/pdf-parser.json
+            success "PDF 解析器配置已下载"
+            ;;
+        *)
+            warn "未知插件: $PLUGIN，跳过插件配置"
+            ;;
+    esac
+    
+    echo
+    info "插件配置文件已保存到: ~/openclaw/plugins/"
+    echo "  请根据需要修改配置文件中的参数（如 API Key、webhook 地址等）"
+    echo "  配置文件路径示例: nano ~/openclaw/plugins/feishu.json"
+fi
