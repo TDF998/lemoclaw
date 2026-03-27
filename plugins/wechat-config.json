@@ -1,0 +1,18 @@
+{
+  "plugin_id": "wechat-adapter",
+  "plugin_name": "微信对话适配器",
+  "version": "0.9",
+  "author": "LemoClaw",
+  "description": "打通微信个人号与企业微信，让 OpenClaw 接收微信消息并自动回复",
+  "config": {
+    "mode": "personal",
+    "wxid": "请填写你的微信ID",
+    "enable_auto_reply": true,
+    "reply_prefix": "[LemoClaw] "
+  },
+  "env_vars": {
+    "WECHAT_WXID": "wxid",
+    "WECHAT_AUTO_REPLY": "true"
+  },
+  "install_notes": "需要安装 wechaty 或使用企业微信 API，个人号模式需配合 wechaty-puppet-wechat"
+}
