@@ -1,0 +1,17 @@
+{
+  "plugin_id": "excel-assistant",
+  "plugin_name": "Excel 智能处理助手",
+  "version": "1.2.0",
+  "author": "LemoClaw",
+  "description": "一键自动化 Excel 数据清洗、合并、图表生成，支持公式批量操作",
+  "config": {
+    "default_output_dir": "./excel_output",
+    "max_file_size_mb": 50,
+    "supported_formats": [".xlsx", ".xls", ".csv"]
+  },
+  "env_vars": {
+    "EXCEL_PYTHON_PATH": "python3",
+    "EXCEL_OUTPUT_DIR": "./excel_output"
+  },
+  "install_notes": "需要安装 pandas 和 openpyxl: pip install pandas openpyxl"
+}
