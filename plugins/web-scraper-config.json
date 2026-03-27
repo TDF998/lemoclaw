@@ -1,0 +1,18 @@
+{
+  "plugin_id": "web-scraper",
+  "plugin_name": "网页内容抓取器",
+  "version": "1.1",
+  "author": "LemoClaw",
+  "description": "智能提取任意网页正文、元数据，支持 JS 渲染，适合数据采集与 RSS 监控",
+  "config": {
+    "default_timeout_sec": 30,
+    "enable_javascript": true,
+    "user_agent": "Mozilla/5.0 (LemoClaw Scraper)",
+    "max_pages": 100
+  },
+  "env_vars": {
+    "SCRAPER_TIMEOUT": "30",
+    "SCRAPER_JS_ENABLED": "true"
+  },
+  "install_notes": "需要安装 puppeteer 或 playwright 支持 JS 渲染: npm install puppeteer"
+}
