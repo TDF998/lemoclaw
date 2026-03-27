@@ -1,0 +1,18 @@
+{
+  "plugin_id": "dalle-generator",
+  "plugin_name": "DALL·E 图片生成器",
+  "version": "1.0",
+  "author": "LemoClaw",
+  "description": "集成 OpenAI 图像生成，通过自然语言生成高质量配图",
+  "config": {
+    "default_size": "1024x1024",
+    "default_quality": "standard",
+    "image_output_dir": "./generated_images",
+    "api_base_url": "https://api.openai.com/v1/images/generations"
+  },
+  "env_vars": {
+    "OPENAI_API_KEY": "your-api-key-here",
+    "DALLE_OUTPUT_DIR": "./generated_images"
+  },
+  "install_notes": "需要 OpenAI API Key，支持 DALL·E 2 和 DALL·E 3"
+}
