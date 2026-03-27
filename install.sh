@@ -126,13 +126,7 @@ main() {
     echo "  2. 启动服务: npm start"
     echo "  3. 查看文档: https://lemoclaw.com/knowledge"
     echo
-    echo -e "${GREEN}✨ 需要一键配置技能？访问: https://lemoclaw.com/skills${NC}"
-    echo
-}
-
-# 运行
-main
-# ============================================
+    # ============================================
 # 处理插件参数（在脚本最后面添加）
 # ============================================
 
@@ -197,3 +191,9 @@ if [ -n "$PLUGIN" ]; then
     echo "  请根据需要修改配置文件中的参数（如 API Key、webhook 地址等）"
     echo "  配置文件路径示例: nano ~/openclaw/plugins/feishu.json"
 fi
+    echo -e "${GREEN}✨ 需要一键配置技能？访问: https://lemoclaw.com/skills${NC}"
+    echo
+}
+
+# 运行
+main
