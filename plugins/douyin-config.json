@@ -1,0 +1,18 @@
+{
+  "plugin_id": "douyin-tracker",
+  "plugin_name": "抖音热点追踪",
+  "version": "0.5",
+  "author": "LemoClaw",
+  "description": "实时获取抖音热门话题、音乐榜单，辅助创作灵感",
+  "config": {
+    "update_interval_minutes": 30,
+    "top_n": 20,
+    "categories": ["hot_video", "hot_music", "hot_topic"],
+    "enable_notify": true
+  },
+  "env_vars": {
+    "DOUYIN_INTERVAL": "30",
+    "DOUYIN_NOTIFY": "true"
+  },
+  "install_notes": "数据来源于公开 API，无需登录。如需推送通知，可配合 feishu 插件使用"
+}
