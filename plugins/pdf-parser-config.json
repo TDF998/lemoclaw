@@ -1,0 +1,19 @@
+{
+  "plugin_id": "pdf-parser",
+  "plugin_name": "PDF 文档解析器",
+  "version": "2.1",
+  "author": "LemoClaw",
+  "description": "OCR 提取 PDF 文本/表格，支持批量处理",
+  "config": {
+    "ocr_language": "chi_sim+eng",
+    "output_format": "markdown",
+    "enable_table_extraction": true,
+    "batch_size": 10,
+    "output_dir": "./pdf_output"
+  },
+  "env_vars": {
+    "PDF_OUTPUT_DIR": "./pdf_output",
+    "PDF_OCR_LANG": "chi_sim+eng"
+  },
+  "install_notes": "需要安装 pdfplumber 和 pytesseract: pip install pdfplumber pytesseract"
+}
