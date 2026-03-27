@@ -793,38 +793,44 @@
         });
     }
 
-        function installHandler(e) {
+function installHandler(e) {
     e.stopPropagation();
     let pluginRaw = this.getAttribute('data-plugin');
     try {
         const plugin = JSON.parse(pluginRaw);
-
-        // 显示安装提示
-        showToast(`正在安装「${plugin.name}」...`);
         
-        // 这里是关键：调用你部署在 GitHub 上的安装脚本
-        // 把下面的地址换成你实际的 raw 地址
+        // 插件名称到参数的映射
+        const pluginParamMap = {
+            'Excel 智能处理助手': 'excel',
+            '飞书消息推送器': 'feishu',
+            'AI 文案创作工坊': 'ai-copywriter',
+            '微信对话适配器': 'wechat',
+            '网页内容抓取器': 'web-scraper',
+            'DALL·E 图片生成器': 'dalle',
+            '抖音热点追踪': 'douyin',
+            'PDF 文档解析器': 'pdf-parser'
+        };
+        
+        const pluginParam = pluginParamMap[plugin.name] || '';
+        
         const installScriptUrl = 'https://raw.githubusercontent.com/TDF998/lemoclaw/refs/heads/main/install.sh';
         
         // 构造安装命令
-        const installCommand = `curl -fsSL ${installScriptUrl} | bash`;
+        let installCommand = `curl -fsSL ${installScriptUrl} | bash`;
+        if (pluginParam) {
+            installCommand += ` -s ${pluginParam}`;
+        }
         
-        // 复制安装命令到剪贴板
+        showToast(`正在准备安装「${plugin.name}」...`);
+        
         navigator.clipboard.writeText(installCommand).then(() => {
-            showToast(`📋 安装命令已复制！请在终端中粘贴并执行：\n${installCommand}`, false, 5000);
+            showToast(`📋 安装命令已复制！请在终端中粘贴并执行：\n\n${installCommand}\n\n安装完成后，配置文件在 ~/openclaw/plugins/ 目录下`, false, 10000);
         }).catch(() => {
-            // 如果复制失败，显示命令让用户手动复制
-            showToast(`⚠️ 请手动复制命令到终端执行：\n${installCommand}`, true, 8000);
+            showToast(`⚠️ 请手动复制命令到终端执行：\n\n${installCommand}`, true, 12000);
         });
         
-        // 可选：同时在新窗口打开安装指南
-        setTimeout(() => {
-            if (confirm('是否需要查看详细的图文安装指南？')) {
-                window.open('https://lemoclaw.com/install-guide', '_blank');
-            }
-        }, 500);
-        
     } catch(e) {
+        console.error(e);
         showToast("安装失败，请检查网络连接", true);
     }
 }
