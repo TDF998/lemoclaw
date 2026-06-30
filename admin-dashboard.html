@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理后台 - 用户审核</title>
+    <script src="supabase_backup.js"></script>
+    <style>
+        :root { --primary:#4F46E5; --bg:#f8fafc; --card-bg:#fff; --text:#1e293b; --text-secondary:#64748b; --border:#e2e8f0; --error:#EF4444; --success:#10B981; --shadow:0 1px 3px rgba(0,0,0,0.06); }
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC',sans-serif;background:var(--bg);color:var(--text);}
+        .navbar{background:var(--card-bg);border-bottom:1px solid var(--border);padding:0 24px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:var(--shadow);}
+        .navbar .brand{font-weight:700;font-size:18px;color:var(--primary);}
+        .navbar .admin-info{display:flex;align-items:center;gap:12px;font-size:14px;color:var(--text-secondary);}
+        .btn-logout{padding:7px 16px;border:1.5px solid var(--border);border-radius:8px;background:#fff;cursor:pointer;font-size:13px;transition:0.2s;}
+        .btn-logout:hover{background:#fef2f2;border-color:#fca5a5;color:#DC2626;}
+        .container{max-width:1200px;margin:0 auto;padding:24px 20px;}
+        .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:24px;}
+        .stat-card{background:var(--card-bg);padding:20px;border-radius:12px;box-shadow:var(--shadow);}
+        .stat-card .number{font-size:28px;font-weight:700;}
+        .stat-card .label{font-size:13px;color:var(--text-secondary);margin-top:4px;}
+        .tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
+        .tab{padding:8px 16px;border:1px solid var(--border);border-radius:8px;background:#fff;cursor:pointer;font-size:14px;transition:0.2s;}
+        .tab.active{background:var(--primary);color:#fff;border-color:var(--primary);}
+        .search-box{width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;margin-bottom:16px;}
+        .table-container{overflow-x:auto;background:var(--card-bg);border-radius:12px;box-shadow:var(--shadow);}
+        table{width:100%;border-collapse:collapse;min-width:600px;}
+        th{text-align:left;padding:12px 16px;font-size:13px;font-weight:600;color:var(--text-secondary);border-bottom:1px solid var(--border);background:#f8fafc;}
+        td{padding:12px 16px;font-size:14px;border-bottom:1px solid var(--border);}
+        .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;}
+        .badge-pending{background:#FFF7ED;color:#C2410C;}
+        .badge-approved{background:#ECFDF5;color:#059669;}
+        .badge-rejected{background:#FEF2F2;color:#DC2626;}
+        .badge-disabled{background:#F1F5F9;color:#64748B;}
+        .action-btns{display:flex;gap:6px;flex-wrap:wrap;}
+        .action-btns button{padding:5px 12px;border:1px solid var(--border);border-radius:6px;background:#fff;cursor:pointer;font-size:13px;transition:0.2s;}
+        .btn-approve{color:#059669;border-color:#A7F3D0;}
+        .btn-approve:hover{background:#ECFDF5;}
+        .btn-reject{color:#DC2626;border-color:#FECACA;}
+        .btn-reject:hover{background:#FEF2F2;}
+        .btn-disable{color:#64748B;}
+        .btn-enable{color:#4F46E5;}
+        .btn-delete{color:#EF4444;border-color:#FECACA;}
+        .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.3);z-index:200;align-items:center;justify-content:center;}
+        .modal-content{background:#fff;padding:24px;border-radius:12px;width:90%;max-width:400px;box-shadow:0 20px 40px rgba(0,0,0,0.2);}
+        .modal-content textarea{width:100%;height:80px;margin:12px 0;border-radius:8px;border:1px solid var(--border);padding:8px;}
+        .loading-text{text-align:center;padding:40px;color:var(--text-secondary);}
+        .error-panel{background:#FEF2F2;border-radius:12px;padding:24px;color:#DC2626;text-align:center;margin-bottom:20px;}
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="brand">🛡️ 管理后台</div>
+        <div class="admin-info">
+            <span id="adminName"></span>
+            <button class="btn-logout" id="logoutBtn">退出</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="stats" id="statsContainer"></div>
+        <div class="tabs">
+            <div class="tab active" data-status="pending">待审核</div>
+            <div class="tab" data-status="approved">已通过</div>
+            <div class="tab" data-status="rejected">已拒绝</div>
+            <div class="tab" data-status="disabled">已禁用</div>
+        </div>
+        <input type="text" id="searchInput" placeholder="搜索用户名或邮箱..." class="search-box">
+        <div class="table-container" id="tableContainer">
+            <div class="loading-text">加载中...</div>
+        </div>
+    </div>
+
+    <div class="modal" id="rejectModal">
+        <div class="modal-content">
+            <h3>拒绝理由（可选）</h3>
+            <textarea id="rejectReason" placeholder="请输入拒绝原因..."></textarea>
+            <div style="display:flex;gap:8px;justify-content:flex-end;">
+                <button id="cancelRejectBtn" style="padding:8px 16px;border:1px solid var(--border);border-radius:8px;background:#fff;cursor:pointer;">取消</button>
+                <button id="confirmRejectBtn" style="padding:8px 16px;background:#DC2626;color:#fff;border:none;border-radius:8px;cursor:pointer;">确认拒绝</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== 配置 Supabase ====================
+        const SUPABASE_URL = 'https://zsyswamtmhqitsqbolut.supabase.co';        // 替换
+        // 用于登录验证的客户端（使用 anon key）
+        const SUPABASE_ANON_KEY = 'sb_publishable_lkwHgCi9HYVKgHxVTw_7UQ_U5PRng_W';                 // 替换
+        const supabaseAuth = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let currentStatus = 'pending';
+        let allProfiles = [];
+
+        // 权限检查
+        (async function init() {
+            console.log('管理后台初始化...');
+            const { data: { user } } = await supabaseAuth.auth.getUser();
+            if (!user) {
+                console.warn('未登录，跳转登录页');
+                window.location.href = 'admin-login.html';
+                return;
+            }
+            const { data: profile, error } = await supabaseAuth
+                .from('profiles')
+                .select('role,nickname')
+                .eq('id', user.id)
+                .single();
+            if (error || !profile || profile.role !== 'admin') {
+                console.warn('非管理员');
+                await supabaseAuth.auth.signOut();
+                window.location.href = 'admin-login.html';
+                return;
+            }
+            document.getElementById('adminName').textContent = '👤 ' + (profile.nickname || user.email);
+            await loadData();
+        })();
+
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
+            await supabaseAuth.auth.signOut();
+            window.location.href = 'admin-login.html';
+        });
+
+        // 标签页切换
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                currentStatus = tab.dataset.status;
+                renderTable();
+            });
+        });
+
+        document.getElementById('searchInput').addEventListener('input', renderTable);
+
+        async function loadData() {
+    const tableContainer = document.getElementById('tableContainer');
+    tableContainer.innerHTML = '<div class="loading-text">加载用户数据中...</div>';
+    try {
+        // 获取当前登录用户的 session
+        const { data: { session } } = await supabaseAuth.auth.getSession();
+        if (!session) throw new Error('未登录');
+        // 调用 Edge Function
+        const response = await fetch('https://zsyswamtmhqitsqbolut.supabase.co/functions/v1/admin-get-users', {
+            headers: { 'Authorization': `Bearer ${session.access_token}` }
+        });
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(errorText);
+        }
+        const data = await response.json();
+        if (!data || data.length === 0) {
+            tableContainer.innerHTML = '<div class="loading-text">暂无用户数据</div>';
+            updateStats([]);
+            return;
+        }
+        allProfiles = data;
+        updateStats(data);
+        renderTable();
+    } catch (error) {
+        console.error('加载用户列表失败：', error);
+        tableContainer.innerHTML = `
+            <div class="error-panel">
+                <h2>❌ 数据加载失败</h2>
+                <p>${error.message}</p>
+                <button class="btn-approve" style="margin-top:12px" onclick="location.reload()">重试</button>
+            </div>
+        `;
+    }
+}
+
+        function updateStats(profiles) {
+            const pending = profiles.filter(u => u.status === 'pending').length;
+            const approved = profiles.filter(u => u.status === 'approved').length;
+            const rejected = profiles.filter(u => u.status === 'rejected').length;
+            const total = profiles.length;
+            document.getElementById('statsContainer').innerHTML = `
+                <div class="stat-card"><div class="number">${total}</div><div class="label">总用户</div></div>
+                <div class="stat-card"><div class="number" style="color:#C2410C;">${pending}</div><div class="label">待审核</div></div>
+                <div class="stat-card"><div class="number" style="color:#059669;">${approved}</div><div class="label">已通过</div></div>
+                <div class="stat-card"><div class="number" style="color:#DC2626;">${rejected}</div><div class="label">已拒绝</div></div>
+            `;
+        }
+
+        function renderTable() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            let filtered = allProfiles.filter(u => u.status === currentStatus);
+            if (search) {
+                filtered = filtered.filter(u =>
+                    u.username?.toLowerCase().includes(search) ||
+                    u.email?.toLowerCase().includes(search)
+                );
+            }
+
+            if (filtered.length === 0) {
+                document.getElementById('tableContainer').innerHTML = '<div class="loading-text">没有符合条件的数据</div>';
+                return;
+            }
+
+            let html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>用户名</th>
+                            <th>邮箱</th>
+                            <th>昵称</th>
+                            <th>注册时间</th>
+                            <th>理由</th>
+                            <th>状态</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            filtered.forEach(user => {
+                const statusBadge = {
+                    pending: '<span class="badge badge-pending">待审核</span>',
+                    approved: '<span class="badge badge-approved">已通过</span>',
+                    rejected: '<span class="badge badge-rejected">已拒绝</span>',
+                    disabled: '<span class="badge badge-disabled">已禁用</span>'
+                }[user.status] || '';
+
+                let actions = '';
+                if (user.status === 'pending') {
+                    actions = `<button class="btn-approve" onclick="approveUser('${user.id}')">批准</button>
+                               <button class="btn-reject" onclick="showRejectModal('${user.id}')">拒绝</button>`;
+                } else if (user.status === 'approved') {
+                    actions = `<button class="btn-disable" onclick="disableUser('${user.id}')">禁用</button>`;
+                } else if (user.status === 'disabled') {
+                    actions = `<button class="btn-enable" onclick="enableUser('${user.id}')">启用</button>`;
+                } else if (user.status === 'rejected') {
+                    actions = `<button class="btn-approve" onclick="approveUser('${user.id}')">重新批准</button>`;
+                }
+                actions += ` <button class="btn-delete" onclick="deleteUser('${user.id}')">删除</button>`;
+
+                html += `
+                    <tr>
+                        <td>${user.username || '-'}</td>
+                        <td>${user.email || '-'}</td>
+                        <td>${user.nickname || '-'}</td>
+                        <td>${new Date(user.created_at).toLocaleDateString()}</td>
+                        <td>${user.reason || '-'}</td>
+                        <td>${statusBadge}</td>
+                        <td><div class="action-btns">${actions}</div></td>
+                    </tr>
+                `;
+            });
+            html += '</tbody></table>';
+            document.getElementById('tableContainer').innerHTML = html;
+        }
+
+               // ==================== 辅助函数：调用 Edge Function ====================
+               async function callAdminFunction(endpoint, body) {
+            const { data: { session } } = await supabaseAuth.auth.getSession();
+            if (!session) throw new Error('登录已过期，请重新登录');
+            const response = await fetch(`${SUPABASE_URL}/functions/v1/${endpoint}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`
+                },
+                body: JSON.stringify(body)
+            });
+            if (!response.ok) {
+                const errText = await response.text();
+                throw new Error(errText || '操作失败');
+            }
+            return response.json();
+        }
+
+        // ========== 操作函数（全部通过 Edge Function）==========
+        window.approveUser = async (id) => {
+            try {
+                await callAdminFunction('admin-approve-user', { userId: id });
+                loadData();  // 刷新列表
+            } catch (err) {
+                alert('批准失败：' + err.message);
+            }
+        };
+
+        window.disableUser = async (id) => {
+            try {
+                await callAdminFunction('admin-disable-user', { userId: id });
+                loadData();
+            } catch (err) {
+                alert('禁用失败：' + err.message);
+            }
+        };
+
+        window.enableUser = async (id) => {
+            try {
+                await callAdminFunction('admin-enable-user', { userId: id });
+                loadData();
+            } catch (err) {
+                alert('启用失败：' + err.message);
+            }
+        };
+
+        window.deleteUser = async (id) => {
+            if (!confirm('确定删除该用户？此操作不可逆。')) return;
+            try {
+                await callAdminFunction('admin-delete-user', { userId: id });
+                loadData();
+            } catch (err) {
+                alert('删除失败：' + err.message);
+            }
+        };
+
+        // 拒绝模态框
+        let currentRejectId = null;
+        window.showRejectModal = (id) => {
+            currentRejectId = id;
+            document.getElementById('rejectModal').style.display = 'flex';
+        };
+        document.getElementById('cancelRejectBtn').addEventListener('click', () => {
+            document.getElementById('rejectModal').style.display = 'none';
+            currentRejectId = null;
+        });
+        document.getElementById('confirmRejectBtn').addEventListener('click', async () => {
+            const reason = document.getElementById('rejectReason').value;
+            try {
+                await callAdminFunction('admin-reject-user', {
+                    userId: currentRejectId,
+                    reason: reason
+                });
+                document.getElementById('rejectModal').style.display = 'none';
+                document.getElementById('rejectReason').value = '';
+                currentRejectId = null;
+                loadData();
+            } catch (err) {
+                alert('拒绝失败：' + err.message);
+            }
+        });
+    </script>
+</body>
+</html>
