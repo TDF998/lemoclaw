@@ -754,7 +754,12 @@
         if(proSub) proSub.addEventListener('click', () => showToast("🔥 升级 ClawBuddy Pro · 9.9/月，解锁无限次数+高级模板，支持支付宝/微信支付 (模拟演示)", false));
         if(contactSales) contactSales.addEventListener('click', () => showToast("📩 企业定制方案: 专属插件开发 + 私有化 OpenClaw 部署，请联系 sales@clawbuddy.com", false));
         if(viewDemo) viewDemo.addEventListener('click', () => showToast("📺 演示视频: 0代码搭建邮件自动回复 & Excel 报表自动化，点击下方链接观看完整教程", false));
-        if(loginBtn) loginBtn.addEventListener('click', () => showToast("🔐 登录后可保存自动化模板，多端同步，体验云端执行 (支持 Google/GitHub 登录)", false));
+        const loginBtn = document.getElementById('loginBtn');
+            if(loginBtn) {
+                loginBtn.addEventListener('click', function(e) {
+                    e.preventDefault(); // 阻止默认行为（如果有）
+                    window.location.href = 'TDFChat.html';
+                });
         
         // 免费试用按钮额外绑定
         const freeStartBtns = document.querySelectorAll('.free-start');
