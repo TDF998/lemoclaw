@@ -49,16 +49,17 @@
                 }
                 .admin-close-btn:hover { color: #dc2626; }
                 .admin-icon {
-                    width: 52px; height: 52px;
+                    width: 60px; height: 60px;
                     border-radius: 50%;
                     background: #EEF2FF;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    font-size: 26px;
-                    margin: 0 auto 12px;
+                    font-size: 36px;
+                    margin: 0 auto 16px;
+                    color: #4F46E5;
                 }
-                .admin-title { font-size: 20px; font-weight: 700; color: #1e293b; text-align: center; }
+                .admin-title { font-size: 20px; font-weight: 700; color: #1e293b; text-align: center; padding-bottom: 8px; }
                 .admin-sub { font-size: 14px; color: #64748b; text-align: center; margin-bottom: 20px; }
                 .admin-input {
                     width: 100%;
@@ -66,7 +67,7 @@
                     border: 1.5px solid #e2e8f0;
                     border-radius: 10px;
                     font-size: 14px;
-                    margin-bottom: 14px;
+                    margin-bottom: 16px;
                     box-sizing: border-box;
                     outline: none;
                     transition: border 0.2s;
@@ -106,7 +107,7 @@
 
             <button class="admin-close-btn" id="adminCloseBtn" title="关闭">✕</button>
             
-            <div class="admin-icon">🛡️</div>
+            <div class="admin-icon"><i class="fa-brands fa-earlybirds"></i></div>
             <div class="admin-title">管理员登录</div>
             <div class="admin-sub">仅限授权管理员访问</div>
 
@@ -116,7 +117,7 @@
             <button class="admin-btn" id="adminLoginBtn">登 录</button>
 
             <div class="admin-error" id="adminError"></div>
-            <div class="admin-hint">💡 连续按 5 次 Shift 可打开/关闭此窗口</div>
+            <div class="admin-hint">连续按 5 次 Shift 可打开/关闭此窗口</div>
         </div>
     `;
 
