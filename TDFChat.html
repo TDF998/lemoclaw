@@ -11,6 +11,7 @@
     <script src="supabase.js"></script>
 
     <style>
+
         /* ---------- 全局重置 & 字体 ---------- */
         * {
             margin: 0;
@@ -109,7 +110,7 @@
         .top-logo {
             width: 44px;
             height: 44px;
-            background: url(icon/chatlogo.png) center/contain no-repeat;
+            background: url(icon/logo.png) center/contain no-repeat;
             border-radius: 50%;
             box-shadow: 0 4px 12px rgba(0,0,0,0.2);
             transition: transform 0.2s;
@@ -506,6 +507,16 @@
         }
 
         /* ---------- 聊天主区域 ---------- */
+        /* 默认状态 */
+        #backToPublic {
+        display: none;
+        }
+
+        /* 显示类（优先级高） */
+        #backToPublic.show-back-btn {
+        display: block !important;
+        }
+
         .chat-main {
             flex: 1;
             display: flex;
@@ -1091,315 +1102,522 @@
         }
 
         /* ================================================================
-           响应式 - 移动端适配
-           ================================================================ */
+        手机端适配 - 全屏无滚动条
+        ================================================================ */
+        @media (max-width: 768px) {
+            /* 手机端容器控制 - 防止同时显示 */
+            #authContainer,
+            #chatContainer {
+                display: none !important;
+            }
 
-        /* 平板及以下 (宽度 ≤ 1024px) */
-        @media (max-width: 1024px) {
-            .chat-container {
-                height: 85vh;
-                max-height: 90vh;
+            /* 当 JS 设置显示时，允许显示 */
+            #authContainer[style*="display: block"],
+            #authContainer[style*="display: flex"] {
+                display: flex !important;
+            }
+
+            #chatContainer[style*="display: flex"],
+            #chatContainer[style*="display: block"] {
+                display: flex !important;
+            }
+        }
+        /* ================================================================
+        登录页面 - 移动端适配
+        ================================================================ */
+
+        @media (max-width: 768px) {
+
+            /* 登录容器 */
+            .auth-container {
+                width: 100% !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+                padding: 24px 20px !important;
+                border-radius: 16 !important;
+                /* min-height: 100vh !important; */
+                display: flex !important;
+                flex-direction: column !important;
+                justify-content: center !important;
+            }
+
+            .auth-container .logo img {
+                width: 56px !important;
+                height: 56px !important;
+            }
+
+            .auth-container .logo h1 {
+                font-size: 20px !important;
+            }
+
+            .auth-container .logo p {
+                font-size: 13px !important;
+            }
+
+            .auth-form .form-group input {
+                padding: 12px 14px !important;
+                font-size: 15px !important;
+                border-radius: 10px !important;
+            }
+
+            .auth-btn {
+                padding: 14px !important;
+                font-size: 16px !important;
+                border-radius: 10px !important;
+            }
+
+            .options-row {
+                font-size: 13px !important;
+                flex-wrap: wrap !important;
+                gap: 8px !important;
+            }
+
+            .auth-switch {
+                font-size: 13px !important;
             }
         }
 
-        /* 手机 (宽度 ≤ 768px) */
+        /* 手机端 (宽度 ≤ 768px) */
         @media (max-width: 768px) {
-            body {
-                padding: 10px;
+
+
+            /* 阻止页面滚动 */
+            html, body {
+                height: 100% !important;
+                overflow: hidden !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                position: fixed !important;
+                width: 100% !important;
+                top: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                bottom: 0 !important;
             }
 
-            /* ---------- 登录卡片 ---------- */
-            .auth-container {
-                padding: 28px 20px 24px 20px;
-                border-radius: 20px;
-                width: 100%;
-                max-width: 400px;
-            }
-            .auth-container .logo img {
-                width: 64px;
-                height: 64px;
-            }
-            .auth-container .logo h1 {
-                font-size: 20px;
-            }
-            .auth-container .logo p {
-                font-size: 13px;
-            }
-            .auth-form .form-group input {
-                padding: 14px 14px;
-                font-size: 16px; /* 防止iOS缩放 */
-            }
-            .auth-btn {
-                padding: 16px;
-                font-size: 17px;
-            }
-            .options-row {
-                flex-wrap: wrap;
-                gap: 8px;
-            }
-            .forgot-link {
-                font-size: 14px;
+            /* 内容容器占满全屏 */
+            .content {
+                height: 100% !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                padding: 16px !important;
+                margin: 0 !important;
+                display: flex !important;
+                flex-direction: column !important;
+                overflow: hidden !important;
+                position: relative !important;
             }
 
             /* ---------- 聊天容器 ---------- */
             .chat-container {
-                height: 90vh;
-                border-radius: 16px;
+                height: 100% !important;
+                max-height: 100% !important;
+                width: 100% !important;
+                border-radius: 0 !important;
                 flex-direction: column;
+                display: flex !important;
+                overflow: hidden !important;
+                position: relative !important;
+                flex: 1 !important;
             }
 
-            /* 成员面板改为横向滚动 */
+            /* ---------- 成员面板 - 固定高度 ---------- */
             .member-panel {
-                width: 100%;
-                height: auto;
-                max-height: 180px;
-                border-right: none;
+                width: 100% !important;
+                height: 130px !important;
+                max-height: 130px !important;
+                min-height: 130px !important;
+                flex-shrink: 0 !important;
+                border-right: none !important;
                 border-bottom: 1px solid #e9ecf0;
+                display: flex !important;
+                flex-direction: column !important;
+                overflow: hidden !important;
             }
+
             .member-panel-header {
-                padding: 10px 16px 6px 16px;
+                padding: 6px 12px 2px 12px !important;
+                flex-shrink: 0 !important;
             }
+
+            .member-panel-header h2 {
+                font-size: 13px !important;
+                margin: 0 !important;
+            }
+
+            .member-count {
+                font-size: 11px !important;
+            }
+
             .member-search {
-                margin: 4px 16px 4px 16px;
+                margin: 2px 12px !important;
+                flex-shrink: 0 !important;
             }
+
+            .member-search input {
+                padding: 4px 8px 4px 26px !important;
+                font-size: 12px !important;
+                border-radius: 8px !important;
+                height: 28px !important;
+            }
+
+            .member-search i {
+                font-size: 12px !important;
+                left: 10px !important;
+            }
+
             .member-list {
-                display: flex;
-                flex-wrap: nowrap;
-                overflow-x: auto;
-                padding: 4px 12px 12px 12px;
-                gap: 4px;
-                flex: 0 0 auto;
+                display: flex !important;
+                flex-wrap: nowrap !important;
+                overflow-x: auto !important;
+                overflow-y: hidden !important;
+                padding: 2px 12px 8px 12px !important;
+                gap: 4px !important;
+                flex: 1 !important;
+                min-height: 50px !important;
+                max-height: 65px !important;
+                align-items: center !important;
             }
+
             .member-list::-webkit-scrollbar {
-                height: 3px;
+                height: 2px !important;
             }
+
+            .member-list::-webkit-scrollbar-thumb {
+                background: #d0d7e2 !important;
+                border-radius: 10px !important;
+            }
+
             .member-item {
-                flex-shrink: 0;
-                padding: 6px 14px;
-                background: #f0f2f5;
-                border-radius: 20px;
-                margin-bottom: 0;
-                flex-direction: row;
-                gap: 8px;
-                min-width: 80px;
-                justify-content: center;
+                flex-shrink: 0 ;
+                padding: 3px 10px ;
+                background: #eaf0fa ;
+                border-radius: 14px ;
+                margin-bottom: 0 ;
+                flex-direction: row ;
+                gap: 4px ;
+                min-width: 50px ;
+                justify-content: center ;
+                align-items: center; 
+                height: 32px ;
             }
+            .member-item.active {
+            background: #87b5ff;
+            }
+            .member-item:active {
+                transform: scale(0.94);
+                background: #bfdbfe;
+            }
+
             .member-item .member-status-text {
-                display: none;
+                display: none !important;
             }
+
             .member-item .member-name .badge {
-                display: none;
+                display: none !important;
             }
+
             .member-item .member-info {
-                white-space: nowrap;
+                white-space: nowrap !important;
+                font-size: 11px !important;
             }
+
             .member-avatar {
-                width: 28px;
-                height: 28px;
-                font-size: 11px;
+                width: 22px !important;
+                height: 22px !important;
+                font-size: 9px !important;
+                flex-shrink: 0 !important;
             }
+
             .member-avatar .status-dot {
-                width: 9px;
-                height: 9px;
-                bottom: -1px;
-                right: -1px;
+                width: 7px !important;
+                height: 7px !important;
+                bottom: -1px !important;
+                right: -1px !important;
+                border-width: 1.5px !important;
             }
 
-            /* 聊天头 */
-            .chat-header-left .back-btn {
-                display: block;
+            .member-name {
+                font-size: 11px !important;
             }
+
+            /* 退出按钮 */
+            .logout-btn {
+                font-size: 12px !important;
+                padding: 2px 8px !important;
+            }
+
+            /* ---------- 聊天主区域 ---------- */
+            .chat-main {
+                flex: 1 !important;
+                min-height: 0 !important;
+                display: flex !important;
+                flex-direction: column !important;
+                width: 100% !important;
+                overflow: hidden !important;
+            }
+
+            /* ---------- 聊天头部 ---------- */
             .chat-header {
-                padding: 10px 16px;
-                min-height: 52px;
+                padding: 6px 12px !important;
+                min-height: 40px !important;
+                flex-shrink: 0 !important;
+                border-bottom: 1px solid #e9ecf0 !important;
             }
+
+            .chat-header-left .back-btn {
+                display: none !important;
+                font-size: 14px !important;
+                padding: 2px 4px !important;
+            }
+
             .chat-header-left .avatar-large {
-                width: 32px;
-                height: 32px;
-                font-size: 13px;
+                width: 24px !important;
+                height: 24px !important;
+                font-size: 11px !important;
             }
+
             .chat-title {
-                font-size: 15px;
+                font-size: 13px !important;
             }
+
             .chat-subtitle {
-                font-size: 12px;
+                font-size: 10px !important;
             }
+
             .chat-header-right i {
-                padding: 6px;
-                font-size: 15px;
+                padding: 4px !important;
+                font-size: 13px !important;
             }
 
-            /* 消息区域 */
+            /* ---------- 消息区域 - 可滚动 ---------- */
             .message-area {
-                padding: 12px 14px 8px 14px;
-            }
-            .message-bubble-wrapper {
-                max-width: 80%;
-            }
-            .message-bubble {
-                font-size: 14px;
-                padding: 8px 14px;
-            }
-            .message-row .msg-avatar {
-                width: 30px;
-                height: 30px;
-                font-size: 11px;
-            }
-            .message-sender-name {
-                font-size: 11px;
+                flex: 1 !important;
+                padding: 6px 10px 4px 10px !important;
+                overflow-y: auto !important;
+                overflow-x: hidden !important;
+                min-height: 0 !important;
+                -webkit-overflow-scrolling: touch !important;
+                background: #ffffff !important;
             }
 
-            /* 输入区域 */
+            .message-area::-webkit-scrollbar {
+                width: 3px !important;
+            }
+
+            .message-area::-webkit-scrollbar-thumb {
+                background: #d0d7e2 !important;
+                border-radius: 10px !important;
+            }
+
+            .message-bubble-wrapper {
+                max-width: 85% !important;
+            }
+
+            .message-bubble {
+                font-size: 13px !important;
+                padding: 6px 12px !important;
+                border-radius: 12px !important;
+            }
+
+            .message-row .msg-avatar {
+                width: 24px !important;
+                height: 24px !important;
+                font-size: 9px !important;
+            }
+
+            .message-sender-name {
+                font-size: 10px !important;
+                margin-bottom: 2px !important;
+            }
+
+            .message-date-divider {
+                font-size: 10px !important;
+                padding: 4px 0 2px 0 !important;
+            }
+
+            .message-meta {
+                font-size: 9px !important;
+                margin-top: 2px !important;
+            }
+
+            /* ---------- 输入区域 - 固定底部 ---------- */
             .chat-input-area {
-                padding: 8px 14px 14px 14px;
-                gap: 8px;
+                padding: 4px 10px 6px 10px !important;
+                gap: 4px !important;
+                flex-shrink: 0 !important;
+                border-top: 1px solid #e9ecf0 !important;
+                background: #ffffff !important;
+                display: flex !important;
+                align-items: flex-end !important;
+                min-height: 44px !important;
+                max-height: 60px !important;
             }
+
             .chat-input-area textarea {
-                height: 40px;
-                font-size: 15px;
-                padding: 8px 12px;
-                border-radius: 12px;
+                height: 32px !important;
+                min-height: 32px !important;
+                max-height: 50px !important;
+                font-size: 13px !important;
+                padding: 4px 8px !important;
+                border-radius: 8px !important;
+                flex: 1 !important;
+                resize: none !important;
+                line-height: 1.4 !important;
+                border: 1px solid #e2e6ea !important;
+                background: #fafbfc !important;
+                overflow-y: auto !important;
             }
+
             .chat-input-area .send-btn,
             .chat-input-area .attach-btn {
-                height: 40px;
-                width: 40px;
-                border-radius: 12px;
-            }
-            .chat-input-area .send-btn {
-                font-size: 16px;
-            }
-            .chat-input-area .attach-btn {
-                font-size: 18px;
+                height: 32px !important;
+                width: 32px !important;
+                min-width: 32px !important;
+                border-radius: 8px !important;
+                font-size: 12px !important;
+                flex-shrink: 0 !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
             }
 
-            /* 底部 */
+            .chat-input-area .send-btn {
+                background: #2b6ef3 !important;
+                color: #fff !important;
+                border: none !important;
+            }
+
+            .chat-input-area .attach-btn {
+                background: transparent !important;
+                color: #7b8794 !important;
+                font-size: 14px !important;
+                border: none !important;
+            }
+
+            /* ---------- 隐藏 Footer ---------- */
             .footer {
-                font-size: 0.7rem;
-                padding: 0.8rem 0.5rem;
+                display: none !important;
+            }
+
+            /* ---------- 附件预览 ---------- */
+            .attachment-preview-area {
+                padding: 2px 10px 4px 10px !important;
+                gap: 4px !important;
+                flex-wrap: nowrap !important;
+                overflow-x: auto !important;
+                flex-shrink: 0 !important;
+                max-height: 60px !important;
+                min-height: 0 !important;
+            }
+
+            .attachment-preview-item {
+                width: 50px !important;
+                height: 50px !important;
+                flex-shrink: 0 !important;
+            }
+
+            /* ---------- 头像/标题 ---------- */
+            .header {
+                display: none !important;
             }
         }
 
         /* 小屏手机 (宽度 ≤ 480px) */
         @media (max-width: 480px) {
-            body {
-                padding: 6px;
-            }
-            .auth-container {
-                padding: 20px 16px 18px 16px;
-                border-radius: 16px;
-            }
-            .auth-container .logo img {
-                width: 56px;
-                height: 56px;
-            }
-            .auth-container .logo h1 {
-                font-size: 18px;
-            }
-            .auth-container .logo p {
-                font-size: 12px;
-            }
-            .auth-form .form-group input {
-                padding: 12px 12px;
-                font-size: 15px;
-            }
-            .auth-btn {
-                padding: 14px;
-                font-size: 16px;
-            }
-            .options-row {
-                font-size: 12px;
+            .member-panel {
+                height: 120px !important;
+                max-height: 120px !important;
+                min-height: 120px !important;
             }
 
-            .chat-container {
-                height: 94vh;
-                border-radius: 12px;
+            .member-list {
+                max-height: 50px !inheritdoc
             }
-            .member-panel {
-                max-height: 160px;
+            .member-list {
+                max-height: 50px !important;
+                min-height: 40px !important;
+                padding: 2px 8px 6px 8px !important;
             }
+
             .member-item {
-                padding: 4px 12px;
-                min-width: 60px;
+                min-width: 40px !important;
+                padding: 2px 8px !important;
+                height: 28px !important;
             }
+
             .member-avatar {
-                width: 24px;
-                height: 24px;
-                font-size: 10px;
+                width: 18px !important;
+                height: 18px !important;
+                font-size: 8px !important;
             }
+
             .member-name {
-                font-size: 12px;
+                font-size: 10px !important;
+            }
+
+            .member-panel-header h2 {
+                font-size: 12px !important;
+            }
+
+            .member-search input {
+                height: 24px !important;
+                font-size: 11px !important;
+                padding: 2px 6px 2px 22px !important;
             }
 
             .chat-header {
-                padding: 8px 12px;
-                min-height: 44px;
+                padding: 4px 8px !important;
+                min-height: 34px !important;
             }
-            .chat-header-left .avatar-large {
-                width: 28px;
-                height: 28px;
-                font-size: 12px;
-            }
+
             .chat-title {
-                font-size: 14px;
+                font-size: 12px !important;
             }
+
             .chat-subtitle {
-                font-size: 11px;
+                font-size: 9px !important;
             }
+
             .message-area {
-                padding: 8px 10px 6px 10px;
+                padding: 4px 6px 2px 6px !important;
             }
+
             .message-bubble {
-                font-size: 13px;
-                padding: 6px 12px;
-                border-radius: 12px;
+                font-size: 12px !important;
+                padding: 4px 10px !important;
             }
-            .message-row .msg-avatar {
-                width: 26px;
-                height: 26px;
-                font-size: 10px;
-            }
-            .message-bubble-wrapper {
-                max-width: 85%;
-            }
+
             .chat-input-area {
-                padding: 6px 10px 12px 10px;
-                gap: 6px;
+                min-height: 38px !important;
+                padding: 3px 6px 4px 6px !important;
+                gap: 3px !important;
             }
+
             .chat-input-area textarea {
-                height: 36px;
-                font-size: 14px;
-                padding: 6px 10px;
+                height: 28px !important;
+                min-height: 28px !important;
+                font-size: 12px !important;
+                padding: 3px 6px !important;
             }
+
             .chat-input-area .send-btn,
             .chat-input-area .attach-btn {
-                height: 36px;
-                width: 36px;
-                border-radius: 10px;
-                font-size: 14px;
+                height: 28px !important;
+                width: 28px !important;
+                min-width: 28px !important;
+                font-size: 11px !important;
+                border-radius: 6px !important;
             }
-            .footer {
-                font-size: 0.6rem;
-            }
-        }
 
-        /* 极窄屏 (宽度 ≤ 360px) */
-        @media (max-width: 360px) {
-            .auth-container {
-                padding: 16px 12px 14px 12px;
+            .message-row .msg-avatar {
+                width: 20px !important;
+                height: 20px !important;
+                font-size: 8px !important;
             }
-            .brand-text {
-                font-size: 0.9rem;
-            }
-            .brand-sub {
-                font-size: 0.7rem;
-            }
-            .logo-area {
-                padding: 0.3rem 0.8rem;
-            }
-            .top-logo {
-                width: 32px;
-                height: 32px;
+
+            .message-sender-name {
+                font-size: 9px !important;
             }
         }
     </style>
@@ -1498,7 +1716,7 @@
                         <button class="back-btn" id="backToMembers" aria-label="返回成员列表">
                             <i class="fas fa-arrow-left"></i>
                         </button>
-                        <button class="back-btn" id="backToPublic" style="display:none;" aria-label="返回团队频道">
+                        <button class="back-btn" id="backToPublic"  aria-label="返回团队频道">
                             <i class="fas fa-arrow-left"></i>
                         </button>
                         <div class="avatar-large" id="chatAvatar"><i class="fas fa-face-grin-tongue"></i></div>
@@ -2005,6 +2223,7 @@
                     document.querySelectorAll('.member-item').forEach(item => {
                         item.addEventListener('click', function() {
                             const userId = this.dataset.id;
+                            console.log('点击成员:', userId);
                             if (userId === currentUser?.id) {
                                 // 点击自己，不切换
                                 return;
@@ -2012,6 +2231,7 @@
                             // 移除所有高亮
                             document.querySelectorAll('.member-item').forEach(el => el.classList.remove('active'));
                             this.classList.add('active');
+                            console.log('已添加 active 类');
                             switchToPrivateChat(userId);
                         });
                     });
@@ -2107,7 +2327,9 @@
                 chatTitleEl.textContent = `与 ${targetProfile.username || targetProfile.full_name || '用户'} 私聊`;
                 chatSubtitleEl.textContent = '私密对话';
                 chatAvatarEl.textContent = targetProfile.username ? targetProfile.username.charAt(0).toUpperCase() : '?';
-                document.getElementById('backToPublic').style.display = 'block';
+                const backBtn = document.getElementById('backToPublic');
+                    backBtn.classList.add('show-back-btn');  // ← 改用类
+                    backBtn.style.display = '';
                 // 重新加载消息
                 loadMessages().then(() => {
                     renderMessages();
@@ -2127,7 +2349,9 @@
                 chatTitleEl.textContent = '团队频道';
                 chatSubtitleEl.textContent = `全员 · 在线 ${onlineUserIds.size} 人`;
                 chatAvatarEl.innerHTML = '<i class="fas fa-face-grin-tongue"></i>';
-                document.getElementById('backToPublic').style.display = 'none';
+                const backBtn = document.getElementById('backToPublic');
+                    backBtn.classList.remove('show-back-btn');
+                    backBtn.style.display = '';
 
                 // 移除成员高亮
                 document.querySelectorAll('.member-item').forEach(el => el.classList.remove('active'));
