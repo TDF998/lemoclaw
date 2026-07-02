@@ -740,7 +740,7 @@
             const { data: { user } } = await supabaseAuth.auth.getUser();
             if (!user) {
                 console.warn('未登录，跳转登录页');
-                window.location.href = 'admin-login.html';
+                window.location.href = 'TDFChat.html';
                 return;
             }
             const { data: profile, error } = await supabaseAuth
@@ -751,7 +751,7 @@
             if (error || !profile || profile.role !== 'admin') {
                 console.warn('非管理员');
                 await supabaseAuth.auth.signOut();
-                window.location.href = 'admin-login.html';
+                window.location.href = 'TDFChat.html';
                 return;
             }
             document.getElementById('adminName').innerHTML = `
@@ -764,7 +764,7 @@
         // ==================== 退出 ====================
         document.getElementById('logoutBtn').addEventListener('click', async () => {
             await supabaseAuth.auth.signOut();
-            window.location.href = 'admin-login.html';
+            window.location.href = 'TDFChat.html';
         });
 
         // ==================== 标签切换 ====================
