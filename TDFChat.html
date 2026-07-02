@@ -1117,13 +1117,16 @@
                 min-width: 0 !important;
                 border-left: none !important;
                 border-top: 1px solid #e9ecf0;
-                max-height: 300px !important;
-                padding: 12px !important;
+                max-height: 56vh !important;
+                min-height: 260px !important;
+                padding: 10px !important;
                 flex-shrink: 0 !important;
+                overflow-y: auto !important;
             }
 
+            /* ✅ 移除棋盘高度限制，让 aspect-ratio:1/1 自适应 */
             #gameBoard {
-                max-height: 200px !important;
+                max-height: none !important;
             }
 
             .game-header h3 {
@@ -1131,8 +1134,30 @@
             }
 
             .btn-game {
+                font-size: 14px !important;
+                padding: 4px 16px !important;
+            }
+
+            #gameStatus {
+                font-size: 12px !important;
+                padding: 6px 10px !important;
+                margin-bottom: 8px !important;
+            }
+
+            #gameRestartBtn {
+                font-size: 13px !important;
+                padding: 8px !important;
+                margin-bottom: 8px !important;
+            }
+
+            #gamePlayers {
                 font-size: 11px !important;
-                padding: 3px 10px !important;
+                margin-top: 6px !important;
+            }
+
+            #gameLog {
+                font-size: 10px !important;
+                max-height: 60px !important;
             }
         }
 
@@ -1735,12 +1760,12 @@
                     <!-- 由 JS 动态渲染 -->
                 </div>
             </div>
-            <!-- ================================================================
+        <!-- ================================================================
             游戏面板（在成员列表和聊天区域之间）
             ================================================================ -->
             <div class="game-panel" id="gamePanel" style="
             display: none;
-            width: 526px;
+            width: 510px;
             background: #ffffff;
             border-left: 1px solid #e9ecf0;
             padding: 16px;
@@ -1758,53 +1783,53 @@
                 </h3>
                 <div>
                     <button id="gameStartBtn" class="btn-game" style="
-                        padding: 4px 12px;
+                        padding: 8px 16px;
                         background: #2b6ef3;
                         color: #fff;
                         border: none;
                         border-radius: 6px;
-                        font-size: 12px;
+                        font-size: 16px;
                         cursor: pointer;
                     ">创建房间</button>
                     <button id="gameJoinBtn" class="btn-game" style="
-                        padding: 4px 12px;
+                        padding: 8px 16px;
                         background: #10b981;
                         color: #fff;
                         border: none;
                         border-radius: 6px;
-                        font-size: 12px;
+                        font-size: 16px;
                         cursor: pointer;
-                        margin-left: 4px;
+                        margin-left: 8px;
                     ">加入房间</button>
                     <!-- <button id="gameBeginBtn" class="btn-game" style="
-                        padding: 4px 12px;
+                        padding: 8px 16px;
                         background: #f59e0b;
                         color: #fff;
                         border: none;
                         border-radius: 6px;
-                        font-size: 12px;
+                        font-size: 16px;
                         cursor: pointer;
                         margin-left: 4px;
                         display: none;
                     ">开始游戏</button> -->
                     <button id="gameObserverBtn" class="btn-game" style="
-                        padding: 4px 12px;
+                        padding: 8px 16px;
                         background: #8b5cf6;
                         color: #fff;
                         border: none;
                         border-radius: 6px;
-                        font-size: 12px;
+                        font-size: 16px;
                         cursor: pointer;
                         margin-left: 4px;
                         display: none;
                     ">观战</button>
                     <button id="gameLeaveBtn" class="btn-game" style="
-                        padding: 4px 12px;
+                        padding: 8px 16px;
                         background: #ef4444;
                         color: #fff;
                         border: none;
                         border-radius: 6px;
-                        font-size: 12px;
+                        font-size: 16px;
                         cursor: pointer;
                         margin-left: 4px;
                         display: none;
@@ -1824,6 +1849,22 @@
             ">
                 💡 点击「创建房间」开始游戏
             </div>
+
+            <!-- 重新开始按钮（游戏结束后显示） -->
+            <button id="gameRestartBtn" style="
+                display: none;
+                width: 100%;
+                padding: 10px;
+                background: #10b981;
+                color: #fff;
+                border: none;
+                border-radius: 10px;
+                font-size: 14px;
+                font-weight: 600;
+                cursor: pointer;
+                margin-bottom: 10px;
+                transition: background 0.15s;
+            ">🔄 重新开始</button>
 
             <!-- 游戏画布 -->
             <div id="gameBoard" style="
@@ -3695,6 +3736,7 @@ const gameJoinBtn = document.getElementById('gameJoinBtn');
 const gameObserverBtn = document.getElementById('gameObserverBtn');
 const gameBeginBtn = document.getElementById('gameBeginBtn');
 const gameLeaveBtn = document.getElementById('gameLeaveBtn');
+const gameRestartBtn = document.getElementById('gameRestartBtn');
 
 // ================================================================
 //  初始化 Canvas
@@ -3780,9 +3822,14 @@ function drawBoard() {
         ctx.fillStyle = 'rgba(0,0,0,0.3)';
         ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
         ctx.fillStyle = '#fff';
-        ctx.font = 'bold 24px sans-serif';
+        ctx.font = 'bold 30px sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText('🏁 游戏结束', ctx.canvas.width / 2, ctx.canvas.height / 2);
+    }
+
+    // 更新重新开始按钮显示
+    if (gameRestartBtn) {
+        gameRestartBtn.style.display = (game.gameOver && game.isHost) ? 'block' : 'none';
     }
 }
 
@@ -4005,6 +4052,7 @@ function handleGameMessage(payload) {
         game.myIndex = game.players.findIndex(p => p.id === currentUser.id);
         if (game.myIndex === -1) game.myIndex = 0;
         game.gameStarted = true;
+        game.gameOver = false; // ✅ 重置游戏结束状态
         game.isMyTurn = (game.currentPlayerIndex === game.myIndex);
         drawBoard();
         updatePlayersUI();
@@ -4169,14 +4217,50 @@ async function cleanupGame() {
     if (panel) panel.style.display = 'none';
     const status = document.getElementById('gameStatus');
     if (status) status.innerHTML = '💡 点击「创建房间」开始游戏';
-    // ✅ 隐藏游戏控制按钮
-    const beginBtn = document.getElementById('gameBeginBtn');
-    if (beginBtn) beginBtn.style.display = 'none';
-    const observerBtn = document.getElementById('gameObserverBtn');
-    if (observerBtn) observerBtn.style.display = 'none';
-    const leaveBtn = document.getElementById('gameLeaveBtn');
-    if (leaveBtn) leaveBtn.style.display = 'none';
+    // ✅ 恢复默认按钮：显示创建/加入，隐藏观战/退出/重新开始
+    if (gameStartBtn) gameStartBtn.style.display = 'inline-block';
+    if (gameJoinBtn) gameJoinBtn.style.display = 'inline-block';
+    if (gameObserverBtn) gameObserverBtn.style.display = 'none';
+    if (gameLeaveBtn) gameLeaveBtn.style.display = 'none';
+    if (gameRestartBtn) gameRestartBtn.style.display = 'none';
     addGameLog('👋 已离开游戏');
+}
+
+// ================================================================
+//  重新开始游戏
+// ================================================================
+function restartGame() {
+    if (!game.isHost) {
+        alert('只有房主可以重新开始');
+        return;
+    }
+    if (!game.gameOver) return;
+
+    // 清空棋盘
+    resetBoard();
+    game.gameStarted = true;
+    game.gameOver = false;
+    game.currentPlayerIndex = 0;
+    game.isMyTurn = (game.myIndex === 0);
+
+    drawBoard();
+    updatePlayersUI();
+    updateGameStatus();
+
+    // 隐藏重新开始按钮
+    if (gameRestartBtn) gameRestartBtn.style.display = 'none';
+
+    addGameLog('🔄 重新开始！');
+    gameStatus.innerHTML = '🎯 游戏重新开始！' + (game.isMyTurn ? ' 你的回合' : '');
+    gameStatus.style.color = '#10b981';
+
+    // 广播重新开始
+    sendGameAction({
+        type: 'game_start',
+        board: game.board,
+        currentPlayer: 0,
+        players: game.players,
+    });
 }
 
 // ================================================================
@@ -4328,15 +4412,11 @@ async function createGameRoom() {
             gameStatus.innerHTML = `🎮 房间已创建！房间号: <b style="color:#2b6ef3;user-select:all;">${game.roomId}</b><br>📋 将房间号分享给好友，等待加入...`;
             addGameLog(`🎮 房间已创建: ${game.roomId}`);
 
-            // ✅ 显示「开始游戏」按钮
-            const beginBtn = document.getElementById('gameBeginBtn');
-            if (beginBtn) beginBtn.style.display = 'inline-block';
-            // ✅ 显示「观战」按钮
-            const observerBtn = document.getElementById('gameObserverBtn');
-            if (observerBtn) observerBtn.style.display = 'inline-block';
-            // ✅ 显示「退出房间」按钮
-            const leaveBtn = document.getElementById('gameLeaveBtn');
-            if (leaveBtn) leaveBtn.style.display = 'inline-block';
+            // ✅ 房主：隐藏创建/加入按钮，只显示退出房间
+            if (gameStartBtn) gameStartBtn.style.display = 'none';
+            if (gameJoinBtn) gameJoinBtn.style.display = 'none';
+            if (gameObserverBtn) gameObserverBtn.style.display = 'none';
+            if (gameLeaveBtn) gameLeaveBtn.style.display = 'inline-block';
         }
     });
 }
@@ -4391,12 +4471,11 @@ async function joinGameRoom() {
             updatePlayersUI();
             gameStatus.innerHTML = '🎮 已加入房间，等待开始...';
             addGameLog(`🎮 已加入房间: ${roomId}`);
-            // ✅ 显示「观战」按钮
-            const observerBtn = document.getElementById('gameObserverBtn');
-            if (observerBtn) observerBtn.style.display = 'inline-block';
-            // ✅ 显示「退出房间」按钮
-            const leaveBtn = document.getElementById('gameLeaveBtn');
-            if (leaveBtn) leaveBtn.style.display = 'inline-block';
+            // ✅ 加入者：隐藏创建/加入按钮，显示观战+退出房间
+            if (gameStartBtn) gameStartBtn.style.display = 'none';
+            if (gameJoinBtn) gameJoinBtn.style.display = 'none';
+            if (gameObserverBtn) gameObserverBtn.style.display = 'inline-block';
+            if (gameLeaveBtn) gameLeaveBtn.style.display = 'inline-block';
             
             setTimeout(() => {
                 sendGameAction({ type: 'sync_request' });
@@ -4440,6 +4519,7 @@ function initGameEvents() {
     if (gameObserverBtn) gameObserverBtn.addEventListener('click', toggleObserver);
     if (gameBeginBtn) gameBeginBtn.addEventListener('click', startGame);
     if (gameLeaveBtn) gameLeaveBtn.addEventListener('click', leaveGameRoom);
+    if (gameRestartBtn) gameRestartBtn.addEventListener('click', restartGame);
 
     if (gameCanvas) {
         // ✅ 修复：防止移动端 click + touchstart 双重触发
