@@ -58,7 +58,9 @@
                     font-size: 36px;
                     margin: 0 auto 16px;
                     color: #4F46E5;
+                    animation: pulse 2s ease-in-out infinite;
                 }
+                @keyframes pulse { 0%,100% { box-shadow:0 0 0 0 rgba(120, 167, 253, 0.6); } 50% { box-shadow:0 0 0 16px rgba(192, 212, 250, 0); } }
                 .admin-title { font-size: 20px; font-weight: 700; color: #1e293b; text-align: center; padding-bottom: 8px; }
                 .admin-sub { font-size: 14px; color: #64748b; text-align: center; margin-bottom: 20px; }
                 .admin-input {
