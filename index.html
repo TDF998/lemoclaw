@@ -750,7 +750,7 @@
 
         if(openEditor) openEditor.addEventListener('click', () => showToast("🎨 可视化编辑器即将开放内测，拖拽式配置「触发+动作」，一键生成 OpenClaw 脚本", false));
         if(createFlow) createFlow.addEventListener('click', () => showToast("✨ 新建自动化流程: 选择触发条件（定时/文件/邮件） + 执行动作（AI/Excel/通知），无需代码", false));
-        if(startFree) startFree.addEventListener('click', () => showToast("🎉 免费版已激活，可体验 5 个基础模板，每日 20 次执行，立即开始自动化之旅", false));
+        if(startFree) startFree.addEventListener('click', () => {window.location.href = './games/index.html';});
         if(proSub) proSub.addEventListener('click', () => showToast("🔥 升级 ClawBuddy Pro · 9.9/月，解锁无限次数+高级模板，支持支付宝/微信支付 (模拟演示)", false));
         if(contactSales) contactSales.addEventListener('click', () => showToast("📩 企业定制方案: 专属插件开发 + 私有化 OpenClaw 部署，请联系 sales@clawbuddy.com", false));
         if(viewDemo) viewDemo.addEventListener('click', () => showToast("📺 演示视频: 0代码搭建邮件自动回复 & Excel 报表自动化，点击下方链接观看完整教程", false));
