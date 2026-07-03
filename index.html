@@ -574,7 +574,7 @@
             <a href="Knowledgebase.html">生态知识库</a>
             <a href="Plugin.html">插件生态平台</a>
             <button class="btn-outline" id="loginBtn">登录</button>
-            <button class="btn-primary" id="startFreeBtn">免费试用</button>
+            <button class="btn-primary" id="startFreeBtn">TDFChatGames</button>
         </div>
     </div>
 </div>
@@ -742,7 +742,7 @@
     function initInteractions() {
         const openEditor = document.getElementById('openEditorBtn');
         const createFlow = document.getElementById('createFlowBtn');
-        const startFree = document.getElementById('startFreeBtn');
+        const startFree = document.getElementById('');
         const proSub = document.getElementById('proSubscribeBtn');
         const contactSales = document.getElementById('contactSales');
         const viewDemo = document.getElementById('viewDemoBtn');
@@ -756,14 +756,16 @@
         if(viewDemo) viewDemo.addEventListener('click', () => showToast("📺 演示视频: 0代码搭建邮件自动回复 & Excel 报表自动化，点击下方链接观看完整教程", false));
         if(loginBtn) {
             loginBtn.addEventListener('click', function(e) {
-                e.preventDefault(); // 阻止默认行为（如果有）
+                e.preventDefault(); 
                 window.location.href = 'TDFChat.html';
             });
         }
                 
-        // 免费试用按钮额外绑定
+        // 免费试用按钮跳转
         const freeStartBtns = document.querySelectorAll('.free-start');
-        freeStartBtns.forEach(btn => btn.addEventListener('click', () => showToast("🎈 免费版已就绪，每天可运行自动化 20 次，基础模板免费开放", false)));
+        freeStartBtns.forEach(btn => btn.addEventListener('click', () => {
+          window.location.href = './games/index.html';
+        }));
     }
 
     // 模拟云端同步 & 会员体系的宣传
