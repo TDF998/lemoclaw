@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>TDFChat · 游戏天地</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&family=Noto+Sans+SC:wght@300;400;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.3.0/css/all.min.css">
+  <style>
+    :root {
+      --bg: oklch(8% 0.02 260);
+      --surface: oklch(16% 0.03 260);
+      --surface-high: oklch(22% 0.04 260);
+      --accent: oklch(65% 0.18 260);
+      --text: oklch(92% 0.02 260);
+      --text-muted: oklch(50% 0.03 260);
+      --gold: oklch(72% 0.14 85);
+      --radius: 20px;
+      --font-display: 'Space Grotesk', sans-serif;
+      --font-body: 'Noto Sans SC', sans-serif;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: linear-gradient(135deg, oklch(7% 0.03 265) 0%, oklch(10% 0.04 280) 40%, oklch(6% 0.02 255) 100%);
+      color: var(--text);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── 背景网格 + 流星光柱 Canvas ── */
+    #bgCanvas {
+      position: fixed; inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+    .container { position: relative; z-index: 1; }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: clamp(24px, 4vw, 48px);
+    }
+
+    .hero {
+      text-align: center;
+      padding: clamp(48px, 1vw, 96px) 0 clamp(32px, 1vw, 64px);
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--surface-high);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 16px;
+    }
+    .hero-title {
+      font-family: var(--font-display);
+      font-size: clamp(40px, 7vw, 80px);
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      margin-bottom: 16px;
+    }
+    .hero-title .highlight { color: var(--accent); }
+    .hero-subtitle {
+      font-size: clamp(16px, 2vw, 20px);
+      color: var(--text-muted);
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    .tech-note {
+      background: var(--surface);
+      border: 1px solid oklch(35% 0.04 260);
+      border-radius: 12px;
+      padding: clamp(16px, 2vw, 24px);
+      margin-bottom: clamp(32px, 4vw, 48px);
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.7;
+    }
+    .tech-note strong { color: var(--accent); }
+
+    .games-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: clamp(16px, 2vw, 24px);
+    }
+
+    .game-card {
+      background: var(--surface);
+      border: 1px solid oklch(35% 0.04 260);
+      border-radius: var(--radius);
+      padding: clamp(24px, 3vw, 32px);
+      transition: transform 0.2s ease-out-quart, border-color 0.2s;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+    .game-card:hover {
+      transform: translateY(-4px);
+      border-color: oklch(50% 0.06 260);
+    }
+    .game-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 16px;
+      background: var(--card-accent);
+    }
+
+    .game-emoji {
+      font-size: clamp(40px, 5vw, 56px);
+      margin-bottom: 12px;
+      display: block;
+    }
+    .game-title {
+      font-family: var(--font-display);
+      font-size: clamp(20px, 2.5vw, 28px);
+      margin-bottom: 8px;
+    }
+    .game-desc {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+    .game-features {
+      display: flex; gap: 8px; flex-wrap: wrap;
+    }
+    .game-feature {
+      font-size: 12px;
+      padding: 4px 10px;
+      background: var(--surface-high);
+      border-radius: 6px;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+    .game-link {
+      position: absolute; inset: 0;
+      z-index: 2;
+    }
+
+    /* Card accent colors */
+    .game-card.whack { --card-accent: oklch(65% 0.22 25); }
+    .game-card.quiz { --card-accent: oklch(72% 0.17 85); }
+    .game-card.canvas { --card-accent: oklch(68% 0.18 330); }
+    .game-card.rhythm { --card-accent: oklch(72% 0.16 140); }
+    .game-card.memory { --card-accent: oklch(68% 0.15 240); }
+
+    .game-card .game-emoji {color: var(--card-accent);}
+
+    .footer {
+      text-align: center;
+      padding: clamp(24px, 3vw, 32px) 0;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+    .footer a { color: var(--accent); }
+
+    @media (max-width: 768px) {
+      .games-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="bgCanvas"></canvas>
+  <div class="container">
+    <div class="hero">
+      <div class="hero-badge">⚡ Supabase Realtime · Broadcast + Presence</div>
+      <h1 class="hero-title"><span class="highlight">TDFChat</span></h1>
+      <h2 class="hero-title">五款<span class="highlight">实时对战</span>小游戏</h2>
+      <p class="hero-subtitle">基于 Supabase Realtime Broadcast 的轻量级多人游戏合集，每个游戏独立运行，手机也能玩。</p>
+    </div>
+
+    <div class="tech-note">
+      <strong>玩家守则</strong>：<strong>公平游戏</strong>，禁用外挂及漏洞。<strong>严禁政治敏感话题</strong>（含领土、领导人及历史事件）。<strong>严禁色情、低俗及歧视性言论</strong>。<strong>禁止辱骂、骚扰他人及恶意刷屏</strong>。违者将视情节处以<strong>禁言、冻结至永久封禁（含机器码）</strong>。<strong>请文明交流，共建和谐环境</strong>。举报通道在游戏内。
+    </div>
+
+    <div class="games-grid">
+      <!-- Whack-a-Mole -->
+      <div class="game-card whack" onclick="window.open('whack-a-mole.html', '_self')">
+        <span class="game-emoji"><i class="fa-solid fa-hammer"></i></span>
+        <div class="game-title">打地鼠对战</div>
+        <div class="game-desc">两位玩家实时竞速，谁的手速更快？地鼠从洞中冒出，先打先得分！</div>
+        <div class="game-features">
+          <span class="game-feature">Broadcast 事件同步</span>
+          <span class="game-feature">Presence 玩家检测</span>
+          <span class="game-feature">手速竞技</span>
+        </div>
+      </div>
+
+      <!-- Speed Quiz -->
+      <div class="game-card quiz" onclick="window.open('speed-quiz.html', '_self')">
+        <span class="game-emoji"><i class="fa-solid fa-brain"></i></span>
+        <div class="game-title">抢答大作战</div>
+        <div class="game-desc">知识竞速，先答对先得分！百科之王花落谁家？</div>
+        <div class="game-features">
+          <span class="game-feature">Broadcast 答题锁定</span>
+          <span class="game-feature">Presence 玩家检测</span>
+          <span class="game-feature">知识竞技</span>
+        </div>
+      </div>
+
+      <!-- Sync Canvas -->
+      <div class="game-card canvas" onclick="window.open('sync-canvas.html', '_self')">
+        <span class="game-emoji"><i class="fa-solid fa-palette"></i></span>
+        <div class="game-title">你画我猜</div>
+        <div class="game-desc">实时协作像素画，你敢luan画·我就hu猜。谁怕谁？</div>
+        <div class="game-features">
+          <span class="game-feature">Broadcast 画笔同步</span>
+          <span class="game-feature">Presence 玩家检测</span>
+          <span class="game-feature">协作/对战双模式</span>
+        </div>
+      </div>
+
+      <!-- Rhythm Sync -->
+      <div class="game-card rhythm" onclick="window.open('rhythm-sync.html', '_self')">
+        <span class="game-emoji"><i class="fa-solid fa-compact-disc"></i></span>
+        <div class="game-title">节拍同步</div>
+        <div class="game-desc">同一旋律同一心跳——音符从天而降，谁的手感最准？</div>
+        <div class="game-features">
+          <span class="game-feature">Broadcast 节拍判定</span>
+          <span class="game-feature">Presence 玩家检测</span>
+          <span class="game-feature">手感竞技</span>
+        </div>
+      </div>
+
+      <!-- Memory Card -->
+      <div class="game-card memory" onclick="window.open('memory-card.html', '_self')">
+        <span class="game-emoji"><i class="fa-solid fa-hand-holding-heart"></i></span>
+        <div class="game-title">翻牌记忆战</div>
+        <div class="game-desc">翻牌配对记忆比拼——谁的眼睛更敏锐？轮番翻牌，配对得分！</div>
+        <div class="game-features">
+          <span class="game-feature">Broadcast 翻牌同步</span>
+          <span class="game-feature">Presence 玩家检测</span>
+          <span class="game-feature">回合制竞技</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      每个游戏需配置 Supabase 以启用多人实时功能 · 配置信息保存在本地浏览器
+    </div>
+  </div>
+
+  <script>
+  (function() {
+    'use strict';
+    const canvas = document.getElementById('bgCanvas');
+    const ctx = canvas.getContext('2d');
+    let W = 0, H = 0, dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const CELL = 40; // 网格大小
+    let cols = 0, rows = 0;
+
+    // 流星颜色调色板（与游戏卡片配色呼应）
+    const METEOR_COLORS = [
+      { r: 120, g: 130, b: 255 }, // 蓝紫
+      { r: 255, g: 180, b: 90 },  // 金橙
+      { r: 255, g: 120, b: 200 }, // 粉紫
+      { r: 100, g: 255, b: 180 }, // 青绿
+      { r: 180, g: 140, b: 255 }, // 紫
+    ];
+
+    function resize() {
+      W = window.innerWidth;
+      H = window.innerHeight;
+      canvas.width = W * dpr;
+      canvas.height = H * dpr;
+      canvas.style.width = W + 'px';
+      canvas.style.height = H + 'px';
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      cols = Math.ceil(W / CELL) + 1;
+      rows = Math.ceil(H / CELL) + 1;
+    }
+
+    /* ── 绘制网格 ── */
+    function drawGrid() {
+      ctx.strokeStyle = 'rgba(110, 120, 200, 0.2)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let i = 0; i <= cols; i++) {
+        const x = i * CELL;
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, H);
+      }
+      for (let j = 0; j <= rows; j++) {
+        const y = j * CELL;
+        ctx.moveTo(0, y);
+        ctx.lineTo(W, y);
+      }
+      ctx.stroke();
+      // 网格交点微光
+      ctx.fillStyle = 'rgba(120, 130, 255, 0.3)';
+      for (let i = 0; i <= cols; i++) {
+        for (let j = 0; j <= rows; j++) {
+          ctx.fillRect(i * CELL - 0.5, j * CELL - 0.5, 1, 1);
+        }
+      }
+    }
+
+    /* ── 流星类 ── */
+    class Meteor {
+      constructor() {
+        this.horizontal = Math.random() > 0.5;
+        const c = METEOR_COLORS[Math.floor(Math.random() * METEOR_COLORS.length)];
+        this.r = c.r; this.g = c.g; this.b = c.b;
+        this.speed = 1.5 + Math.random() * 3;
+        this.tailLen = 100 + Math.random() * 180;
+        this.life = 0;
+        this.maxLife = 200 + Math.random() * 300;
+        this.thickness = 1.5 + Math.random() * 1.5;
+
+        if (this.horizontal) {
+          this.row = Math.floor(Math.random() * rows);
+          this.y = this.row * CELL + CELL / 2;
+          this.reverse = Math.random() > 0.5;
+          this.x = this.reverse ? W + 50 : -50;
+          this.vx = this.reverse ? -this.speed : this.speed;
+          this.vy = 0;
+        } else {
+          this.col = Math.floor(Math.random() * cols);
+          this.x = this.col * CELL + CELL / 2;
+          this.reverse = Math.random() > 0.5;
+          this.y = this.reverse ? H + 50 : -50;
+          this.vx = 0;
+          this.vy = this.reverse ? -this.speed : this.speed;
+        }
+      }
+
+      get alpha() {
+        const fadeIn = 40;
+        const fadeOut = 80;
+        if (this.life < fadeIn) return this.life / fadeIn;
+        if (this.life > this.maxLife - fadeOut) return Math.max(0, (this.maxLife - this.life) / fadeOut);
+        return 1;
+      }
+
+      update() {
+        this.life++;
+        this.x += this.vx;
+        this.y += this.vy;
+        // 判断是否飞出屏幕
+        if (this.horizontal) {
+          if (this.reverse && this.x < -this.tailLen) return false;
+          if (!this.reverse && this.x > W + this.tailLen) return false;
+        } else {
+          if (this.reverse && this.y < -this.tailLen) return false;
+          if (!this.reverse && this.y > H + this.tailLen) return false;
+        }
+        if (this.life > this.maxLife) return false;
+        return true;
+      }
+
+      draw() {
+        const a = this.alpha;
+        if (a <= 0) return;
+        const c = `${this.r}, ${this.g}, ${this.b}`;
+
+        // 尾巴方向（反方向）
+        const tx = this.x - this.vx * (this.tailLen / this.speed);
+        const ty = this.y - this.vy * (this.tailLen / this.speed);
+
+        // 画尾巴渐变线
+        const grad = ctx.createLinearGradient(this.x, this.y, tx, ty);
+        grad.addColorStop(0, `rgba(${c}, ${0.9 * a})`);
+        grad.addColorStop(0.3, `rgba(${c}, ${0.4 * a})`);
+        grad.addColorStop(1, `rgba(${c}, 0)`);
+
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = this.thickness;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(this.x, this.y);
+        ctx.lineTo(tx, ty);
+        ctx.stroke();
+
+        // 头部光晕
+        ctx.shadowColor = `rgba(${c}, ${a})`;
+        ctx.shadowBlur = 16;
+        ctx.fillStyle = `rgba(${c}, ${a})`;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.thickness * 1.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 内核高亮
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = `rgba(255, 255, 255, ${0.7 * a})`;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.thickness * 0.6, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    /* ── 流星管理 ── */
+    let meteors = [];
+    const MAX_METEORS = 60;
+    let spawnCooldown = 0;
+
+    function spawnMeteor() {
+      if (meteors.length < MAX_METEORS) {
+        meteors.push(new Meteor());
+      }
+    }
+
+    /* ── 主渲染循环 ── */
+    function loop() {
+      ctx.clearRect(0, 0, W, H);
+      drawGrid();
+
+      // 更新 & 绘制流星
+      meteors = meteors.filter(m => {
+        const alive = m.update();
+        if (alive) m.draw();
+        return alive;
+      });
+
+      // 随机生成新流星
+      if (spawnCooldown <= 0 && meteors.length < MAX_METEORS) {
+        spawnMeteor();
+        spawnCooldown = 20 + Math.random() * 100; // 0.5~1.8s
+      }
+      spawnCooldown--;
+
+      // 如果屏幕上没有流星，强制生成一个
+      if (meteors.length === 0) {
+        spawnMeteor();
+        spawnMeteor();
+      }
+
+      requestAnimationFrame(loop);
+    }
+
+    // 初始化
+    resize();
+    window.addEventListener('resize', resize);
+    // 起手生成 8 颗
+    for (let i = 0; i < 8; i++) spawnMeteor();
+    loop();
+  })();
+  </script>
+</body>
+</html>

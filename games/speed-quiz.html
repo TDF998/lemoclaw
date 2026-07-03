@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>抢答大作战 · Speed Quiz Battle</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Anybody:wght@400;700;900&family=Noto+Sans+SC:wght@300;400;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: oklch(10% 0.03 280);
+      --surface: oklch(18% 0.04 280);
+      --surface-high: oklch(24% 0.05 280);
+      --accent: oklch(72% 0.17 85);
+      --accent-glow: oklch(78% 0.2 85 / 0.3);
+      --danger: oklch(55% 0.22 20);
+      --green: oklch(58% 0.16 150);
+      --text: oklch(94% 0.02 280);
+      --text-muted: oklch(55% 0.04 280);
+      --gold: oklch(78% 0.16 85);
+      --silver: oklch(72% 0.02 280);
+      --radius: 20px;
+      --font-display: 'Anybody', sans-serif;
+      --font-body: 'Noto Sans SC', sans-serif;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: linear-gradient(135deg, oklch(10% 0.03 280) 0%, oklch(13% 0.04 285) 40%, oklch(7% 0.02 275) 100%);
+      color: var(--text);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      overflow-x: hidden;
+    }
+
+    #bgCanvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+
+    #app {
+      width: 1200px;
+      max-width: 100%;
+      min-height: 100vh;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ── Modal ── */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: oklch(8% 0.04 280 / 0.85);
+      backdrop-filter: blur(12px);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 100;
+    }
+    .modal-overlay.hidden { display: none; }
+    .modal-card {
+      background: var(--surface);
+      border: 1px solid oklch(35% 0.06 280);
+      border-radius: var(--radius);
+      padding: clamp(24px, 4vw, 40px);
+      width: min(480px, 90vw);
+      box-shadow: 0 32px 80px oklch(0% 0 0 / 0.6);
+    }
+    .modal-card h2 {
+      font-family: var(--font-display);
+      font-size: clamp(20px, 3vw, 28px);
+      margin-bottom: 8px;
+      color: var(--gold);
+    }
+    .modal-card p {
+      color: var(--text-muted);
+      font-size: 14px;
+      margin-bottom: 24px;
+      line-height: 1.6;
+    }
+    .field-group { margin-bottom: 16px; }
+    .field-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .field-group input {
+      width: 100%;
+      padding: 10px 14px;
+      background: var(--bg);
+      border: 1px solid oklch(35% 0.06 280);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .field-group input:focus { border-color: var(--gold); }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-family: var(--font-display);
+      font-size: 14px;
+      cursor: pointer;
+      border: none;
+      transition: transform 0.15s ease-out-quart, box-shadow 0.2s;
+      user-select: none;
+    }
+    .btn:active { transform: scale(0.95); }
+    .btn-primary {
+      background: var(--gold);
+      color: oklch(10% 0.03 280);
+      box-shadow: 0 4px 20px var(--accent-glow);
+    }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+
+    .auth-tabs { display: flex; gap: 4px; background: var(--surface-high); padding: 4px; border-radius: 10px; margin: 8px 0 16px; }
+    .auth-tab { flex: 1; padding: 10px 12px; border: none; background: transparent; color: var(--text-dim); font-size: 14px; font-weight: 600; border-radius: 7px; cursor: pointer; transition: all 0.2s; }
+    .auth-tab.active { background: var(--gold); color: oklch(10% 0.03 280); box-shadow: 0 2px 8px var(--accent-glow); }
+    .auth-status { margin: 12px 0 0; min-height: 20px; font-size: 13px; text-align: center; line-height: 1.4; }
+    .auth-status.ok  { color: var(--green); }
+    .auth-status.err { color: var(--accent); }
+    .hint { color: var(--text-dim); font-size: 12px; font-weight: 400; }
+    #signupExtra.hidden { display: none; }
+    .btn-secondary {
+      background: var(--surface-high);
+      color: var(--text);
+      border: 1px solid oklch(35% 0.06 280);
+    }
+
+    /* ── Screen System ── */
+    .screen {
+      display: none;
+      padding: clamp(16px, 3vw, 32px);
+      position: relative;
+      z-index: 1;
+    }
+    .screen.active {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    /* ── Lobby ── */
+    .lobby-icon {
+      font-size: clamp(56px, 8vw, 96px);
+      margin-bottom: 16px;
+      animation: iconFloat 3s ease-in-out infinite;
+    }
+    @keyframes iconFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+    .lobby-title {
+      font-family: var(--font-display);
+      font-size: clamp(36px, 7vw, 72px);
+      text-align: center;
+      color: var(--gold);
+      margin-bottom: 4px;
+      letter-spacing: -0.02em;
+      text-shadow: 0 4px 32px var(--accent-glow);
+    }
+    .lobby-subtitle {
+      font-size: clamp(14px, 2vw, 18px);
+      color: var(--text-muted);
+      text-align: center;
+      margin-bottom: clamp(32px, 5vw, 48px);
+    }
+    .lobby-form {
+      display: flex; flex-direction: column; gap: 16px;
+      width: min(360px, 90vw);
+    }
+
+    /* ── Waiting ── */
+    .waiting-card {
+      background: var(--surface);
+      border: 1px solid oklch(35% 0.06 280);
+      border-radius: var(--radius);
+      padding: clamp(24px, 4vw, 40px);
+      width: min(480px, 90vw);
+      text-align: center;
+    }
+    .waiting-card h2 { font-family: var(--font-display); font-size: clamp(18px, 3vw, 24px); color: var(--gold); margin-bottom: 16px; }
+    .room-id {
+      font-family: var(--font-display);
+      font-size: clamp(28px, 4vw, 40px);
+      color: var(--gold);
+      background: var(--bg);
+      padding: 12px 24px;
+      border-radius: 10px;
+      margin: 12px 0 24px;
+      letter-spacing: 0.08em;
+      border: 2px dashed oklch(50% 0.08 85);
+    }
+    .player-list { display: flex; gap: 12px; justify-content: center; margin-bottom: 24px; flex-wrap: wrap; }
+    .player-badge {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--surface-high);
+      padding: 8px 16px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .player-badge .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--green); animation: pulse-dot 1.5s infinite; }
+    @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+    .waiting-hint { color: var(--text-muted); font-size: 14px; }
+
+    /* ── Game ── */
+    .game-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: clamp(12px, 2vw, 20px) clamp(16px, 3vw, 32px);
+      background: var(--surface);
+      border-bottom: 2px solid oklch(30% 0.06 280);
+      flex-wrap: wrap; gap: 12px;
+    }
+    .game-round { font-family: var(--font-display); font-size: clamp(14px, 2vw, 20px); color: var(--silver); }
+    .game-timer-bar {
+      position: relative;
+      width: clamp(120px, 20vw, 200px);
+      height: 8px;
+      background: var(--surface-high);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .game-timer-fill {
+      position: absolute; left: 0; top: 0; bottom: 0;
+      background: var(--gold);
+      border-radius: 4px;
+      transition: width 0.3s linear;
+    }
+    .game-timer-text {
+      font-family: var(--font-display);
+      font-size: clamp(16px, 2.5vw, 24px);
+      color: var(--gold);
+      margin-left: 12px;
+    }
+    .game-scores { display: flex; gap: clamp(8px, 1.5vw, 16px); }
+    .score-pill {
+      display: flex; align-items: center; gap: 6px;
+      background: var(--surface-high);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+    .score-pill .sp-name { color: var(--text-muted); font-weight: 700; }
+    .score-pill .sp-val { font-family: var(--font-display); font-size: clamp(16px, 2vw, 20px); color: var(--gold); }
+
+    /* ── Question Area ── */
+    .question-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: clamp(16px, 3vw, 32px);
+      gap: clamp(20px, 3vw, 32px);
+    }
+    .question-card {
+      background: var(--surface);
+      border: 1px solid oklch(35% 0.06 280);
+      border-radius: var(--radius);
+      padding: clamp(24px, 4vw, 48px);
+      width: min(900px, 95vw);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .question-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--gold), oklch(72% 0.17 280), var(--gold));
+    }
+    .question-category {
+      font-family: var(--font-display);
+      font-size: clamp(12px, 1.5vw, 16px);
+      color: var(--silver);
+      margin-bottom: 12px;
+      letter-spacing: 0.08em;
+    }
+    .question-text {
+      font-family: var(--font-display);
+      font-size: clamp(20px, 3.5vw, 36px);
+      line-height: 1.4;
+      color: var(--text);
+      margin-bottom: 0;
+    }
+
+    /* ── Options ── */
+    .options-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: clamp(12px, 2vw, 20px);
+      width: min(900px, 95vw);
+    }
+    .option-btn {
+      background: var(--surface);
+      border: 2px solid oklch(30% 0.06 280);
+      border-radius: 14px;
+      padding: clamp(14px, 2vw, 20px) clamp(16px, 2vw, 24px);
+      font-family: var(--font-body);
+      font-size: clamp(14px, 2vw, 18px);
+      font-weight: 700;
+      color: var(--text);
+      cursor: pointer;
+      transition: transform 0.12s ease-out-quart, border-color 0.15s, background 0.15s;
+      text-align: left;
+      position: relative;
+      overflow: hidden;
+    }
+    .option-btn .opt-label {
+      font-family: var(--font-display);
+      color: var(--gold);
+      margin-right: 8px;
+    }
+    .option-btn:hover:not(.disabled) {
+      border-color: var(--gold);
+      background: var(--surface-high);
+    }
+    .option-btn:active:not(.disabled) { transform: scale(0.96); }
+    .option-btn.correct {
+      border-color: var(--green);
+      background: oklch(20% 0.06 150);
+      animation: correctFlash 0.5s ease-out-quart;
+    }
+    .option-btn.wrong {
+      border-color: var(--danger);
+      background: oklch(20% 0.06 20);
+      animation: wrongShake 0.4s;
+    }
+    .option-btn.disabled { cursor: default; opacity: 0.5; }
+    @keyframes correctFlash {
+      0% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+    @keyframes wrongShake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-6px); }
+      40% { transform: translateX(6px); }
+      60% { transform: translateX(-4px); }
+      80% { transform: translateX(4px); }
+    }
+
+    /* ── Answer Lock Indicator ── */
+    .lock-indicator {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 16px;
+      background: var(--surface-high);
+      border-radius: 10px;
+      font-size: 14px;
+      color: var(--text-muted);
+      min-height: 40px;
+    }
+    .lock-indicator .lock-name { font-weight: 700; color: var(--gold); }
+
+    /* ── Result ── */
+    .result-card {
+      background: var(--surface);
+      border: 1px solid oklch(35% 0.06 280);
+      border-radius: var(--radius);
+      padding: clamp(32px, 5vw, 48px);
+      width: min(520px, 90vw);
+      text-align: center;
+    }
+    .result-icon { font-size: 64px; margin-bottom: 12px; }
+    .result-title {
+      font-family: var(--font-display);
+      font-size: clamp(28px, 4vw, 40px);
+      color: var(--gold);
+      margin-bottom: 24px;
+    }
+    .result-scores { display: flex; gap: 24px; justify-content: center; margin-bottom: 32px; flex-wrap: wrap; }
+    .result-player {
+      background: var(--surface-high);
+      padding: 16px 24px;
+      border-radius: 12px;
+      min-width: 160px;
+    }
+    .result-player.winner { border: 2px solid var(--gold); box-shadow: 0 8px 32px var(--accent-glow); }
+    .result-player .rp-name { font-weight: 700; font-size: 16px; margin-bottom: 8px; }
+    .result-player .rp-score { font-family: var(--font-display); font-size: clamp(24px, 4vw, 36px); color: var(--gold); }
+
+    /* ── Connection ── */
+    .conn-bar {
+      position: fixed; top: 0; left: 0; right: 0;
+      padding: 8px 16px; text-align: center; font-size: 13px; font-weight: 700; z-index: 50;
+    }
+    .conn-bar.ok { background: var(--green); color: oklch(98% 0 0); }
+    .conn-bar.err { background: var(--danger); color: oklch(98% 0 0); }
+    .conn-bar.hidden { transform: translateY(-100%); opacity: 0; }
+
+    /* ── Countdown ── */
+    .countdown-overlay {
+      position: fixed; inset: 0;
+      background: oklch(8% 0.04 280 / 0.7);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 80;
+      font-family: var(--font-display);
+      font-size: clamp(64px, 12vw, 120px);
+      color: var(--gold);
+      text-shadow: 0 8px 48px var(--accent-glow);
+      animation: countPulse 0.6s ease-out-quart;
+    }
+    @keyframes countPulse {
+      0% { transform: scale(2); opacity: 0; }
+      50% { transform: scale(1.1); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .fade-in { animation: fadeIn 0.4s ease-out-quart; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .game-header { justify-content: center; }
+      .options-grid { grid-template-columns: 1fr; }
+      .question-text { font-size: clamp(18px, 4vw, 24px); }
+    }
+    @media (pointer: coarse) {
+      .option-btn { padding: 16px 20px; }
+      .btn { padding: 14px 28px; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="bgCanvas"></canvas>
+  <div id="app">
+    <div id="connBar" class="conn-bar hidden"></div>
+
+    <!-- Auth Modal -->
+    <div id="configModal" class="modal-overlay">
+      <div class="modal-card fade-in">
+        <h2>⚡ 账户登录</h2>
+        <p>使用你在 Supabase 项目下注册的账户登录。仅 <strong>status = approved</strong> 的账户可进入对战。</p>
+        <div class="auth-tabs">
+          <button id="tabLogin" class="auth-tab active" onclick="switchAuthTab('login')">登录</button>
+          <button id="tabSignup" class="auth-tab" onclick="switchAuthTab('signup')">注册</button>
+        </div>
+        <div class="field-group"><label>邮箱</label><input id="authEmail" type="email" placeholder="you@example.com" autocomplete="email"></div>
+        <div class="field-group"><label>密码 <span class="hint">(至少 6 位)</span></label><input id="authPassword" type="password" placeholder="••••••••" autocomplete="current-password"></div>
+        <div id="signupExtra" class="hidden"><div class="field-group"><label>昵称</label><input id="authUsername" type="text" placeholder="昵称 (房间内显示)" maxlength="12"></div></div>
+        <button id="authSubmitBtn" class="btn btn-primary" onclick="handleAuth()">登录</button>
+        <p class="auth-status" id="authStatus"></p>
+      </div>
+    </div>
+
+    <!-- Lobby -->
+    <div id="lobbyScreen" class="screen">
+      <div class="lobby-icon">⚡</div>
+      <h1 class="lobby-title">抢答大作战</h1>
+      <p class="lobby-subtitle">知识竞速，先答对先得分！谁才是真正的百科之王？</p>
+      <div class="lobby-form">
+        <div class="field-group"><label>你的昵称</label><input id="playerName" placeholder="玩家昵称" maxlength="12"></div>
+        <button class="btn btn-primary" onclick="createRoom()">创建房间</button>
+        <div class="field-group"><label>加入房间</label><input id="joinRoomId" placeholder="输入房间号" maxlength="6"></div>
+        <button class="btn btn-secondary" onclick="joinRoom()">加入对战</button>
+      </div>
+    </div>
+
+    <!-- Waiting -->
+    <div id="waitingScreen" class="screen">
+      <div class="waiting-card fade-in">
+        <h2>等待对手加入</h2>
+        <div class="room-id" id="roomIdDisplay">------</div>
+        <p class="waiting-hint">将房间号分享给朋友，等待对方加入...</p>
+        <div class="player-list" id="playerList"></div>
+      </div>
+    </div>
+
+    <!-- Game -->
+    <div id="gameScreen" class="screen" style="display:none;">
+      <div class="game-header">
+        <div class="game-round" id="roundDisplay">第 1 题</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="game-timer-bar"><div class="game-timer-fill" id="timerFill" style="width:100%"></div></div>
+          <div class="game-timer-text" id="timerDisplay">10</div>
+        </div>
+        <div class="game-scores" id="scoresDisplay"></div>
+      </div>
+      <div class="question-area">
+        <div class="lock-indicator" id="lockIndicator">等待抢答...</div>
+        <div class="question-card" id="questionCard">
+          <div class="question-category" id="questionCategory">分类</div>
+          <div class="question-text" id="questionText">问题加载中...</div>
+        </div>
+        <div class="options-grid" id="optionsGrid"></div>
+      </div>
+    </div>
+
+    <!-- Result -->
+    <div id="resultScreen" class="screen">
+      <div class="result-card fade-in">
+        <div class="result-icon" id="resultIcon">🏆</div>
+        <div class="result-title" id="resultTitle">对战结束</div>
+        <div class="result-scores" id="resultScores"></div>
+        <button class="btn btn-primary" onclick="backToLobby()">再来一局</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ── Question Bank ── */
+    const QUESTIONS = [
+      { cat: '天文', q: '太阳系中最大的行星是？', opts: ['木星', '土星', '天王星', '海王星'], ans: 0 },
+      { cat: '地理', q: '世界上最长的河流是？', opts: ['尼罗河', '亚马逊河', '长江', '密西西比河'], ans: 0 },
+      { cat: '物理', q: '光在真空中的速度约为？', opts: ['3×10⁸ m/s', '3×10⁶ m/s', '3×10⁵ m/s', '3×10⁷ m/s'], ans: 0 },
+      { cat: '历史', q: '秦统一六国是在哪一年？', opts: ['公元前221年', '公元前206年', '公元前256年', '公元前230年'], ans: 0 },
+      { cat: '生物', q: '人体最大的器官是？', opts: ['皮肤', '肝脏', '肺', '心脏'], ans: 0 },
+      { cat: '文学', q: '《红楼梦》的作者是？', opts: ['曹雪芹', '施耐庵', '吴承恩', '罗贯中'], ans: 0 },
+      { cat: '化学', q: '水的化学式是？', opts: ['H₂O', 'CO₂', 'NaCl', 'O₂'], ans: 0 },
+      { cat: '数学', q: '圆周率π的前两位小数是？', opts: ['3.14', '3.16', '3.12', '3.41'], ans: 0 },
+      { cat: '音乐', q: '贝多芬的第九交响曲别名是？', opts: ['合唱交响曲', '英雄交响曲', '命运交响曲', '田园交响曲'], ans: 0 },
+      { cat: '科技', q: '世界上第一台通用电子计算机是？', opts: ['ENIAC', 'EDVAC', 'UNIVAC', 'IBM 701'], ans: 0 },
+      { cat: '体育', q: '奥运五环中绿色环代表哪个大洲？', opts: ['大洋洲', '欧洲', '亚洲', '非洲'], ans: 0 },
+      { cat: '美食', q: '寿司起源于哪个国家？', opts: ['日本', '中国', '韩国', '泰国'], ans: 0 },
+      { cat: '语言', q: '世界上使用人数最多的语言是？', opts: ['中文', '英语', '西班牙语', '阿拉伯语'], ans: 0 },
+      { cat: '电影', q: '第一部获得奥斯卡最佳影片的彩色电影是？', opts: ['乱世佳人', '绿野仙踪', '卡萨布兰卡', '雨中曲'], ans: 0 },
+      { cat: '动物', q: '世界上跑得最快的陆地动物是？', opts: ['猎豹', '狮子', '羚羊', '鸵鸟'], ans: 0 },
+      { cat: '编程', q: 'JavaScript 由哪家公司创建？', opts: ['Netscape', 'Microsoft', 'Google', 'Apple'], ans: 0 },
+      { cat: '天文', q: '月球绕地球一圈大约需要多少天？', opts: ['27.3天', '30天', '24天', '35天'], ans: 0 },
+      { cat: '建筑', q: '世界最高的建筑是？', opts: ['哈利法塔', '上海中心', '东京塔', '台北101'], ans: 0 },
+      { cat: '自然', q: '钻石的主要成分是？', opts: ['碳', '硅', '铁', '铝'], ans: 0 },
+      { cat: '文化', q: '中国四大发明不包括以下哪项？', opts: ['丝绸', '造纸', '火药', '指南针'], ans: 0 },
+    ];
+
+    /* ── State ── */
+    let channel = null;
+    let myId = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2);
+    let myName = '', roomId = '';
+    let players = {};
+    let myScore = 0, opponentScore = 0;
+    let currentQ = 0;
+    let totalQ = 10;
+    let questionOrder = [];
+    let timerInterval = null;
+    let timeLeft = 10;
+    let answered = false;
+    let answerLockedBy = null;
+    let gameActive = false;
+    let isHost = false;
+
+    /* ── Auth ── */
+    let authMode = 'login';
+    let currentProfile = null;
+
+    function switchAuthTab(mode) {
+      authMode = mode;
+      const isLogin = mode === 'login';
+      document.getElementById('tabLogin').classList.toggle('active', isLogin);
+      document.getElementById('tabSignup').classList.toggle('active', !isLogin);
+      document.getElementById('signupExtra').classList.toggle('hidden', isLogin);
+      document.getElementById('authSubmitBtn').textContent = isLogin ? '登录' : '注册并申请审核';
+      document.getElementById('authPassword').autocomplete = isLogin ? 'current-password' : 'new-password';
+      document.getElementById('authStatus').textContent = '';
+      document.getElementById('authStatus').className = 'auth-status';
+    }
+
+    function setAuthStatus(msg, isErr) {
+      const el = document.getElementById('authStatus');
+      el.textContent = msg;
+      el.className = 'auth-status' + (isErr ? ' err' : ' ok');
+    }
+
+    function initSupabase() { /* 保留函数签名兼容，但已由顶部硬编码取代 */ }
+
+    // ================================================================
+    //  🔧 配置区域 — 请替换为你自己的 Supabase 项目信息
+    // ================================================================
+    const SUPABASE_URL = 'https://zsyswamtmhqitsqbolut.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_lkwHgCi9HYVKgHxVTw_7UQ_U5PRng_W';
+
+    if (SUPABASE_URL.includes('YOUR_PROJECT') || SUPABASE_ANON_KEY.includes('YOUR_ANON_KEY')) {
+      alert('⚠️ 请先在代码顶部配置 SUPABASE_URL 和 SUPABASE_ANON_KEY');
+    }
+
+    // ================================================================
+    //  初始化 Supabase
+    // ================================================================
+    if (typeof supabase === 'undefined' || !supabase.createClient) {
+      console.error('Supabase SDK not loaded');
+      document.addEventListener('DOMContentLoaded', () => {
+        setAuthStatus('Supabase SDK 加载失败，请检查网络后刷新', true);
+      });
+    }
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { storage: sessionStorage }
+    });
+
+    async function handleAuth() {
+      const email = document.getElementById('authEmail').value.trim();
+      const password = document.getElementById('authPassword').value;
+      const username = document.getElementById('authUsername').value.trim();
+      if (!email || !password) { setAuthStatus('请填写邮箱和密码', true); return; }
+      if (password.length < 6) { setAuthStatus('密码至少 6 位', true); return; }
+      if (authMode === 'signup' && !username) { setAuthStatus('请填写昵称', true); return; }
+
+      const btn = document.getElementById('authSubmitBtn');
+      btn.disabled = true;
+      const origText = btn.textContent;
+      btn.textContent = authMode === 'login' ? '登录中…' : '注册中…';
+
+      try {
+        if (authMode === 'signup') {
+          const { data, error } = await supabaseClient.auth.signUp({
+            email, password,
+            options: { data: { username, display_name: username } }
+          });
+          if (error) throw error;
+          if (!data.session) {
+            setAuthStatus('注册成功！请去邮箱点击确认链接后再登录（可在 Supabase 控制台关闭 Email Confirm）', false);
+            switchAuthTab('login');
+            return;
+          }
+        } else {
+          const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+          if (error) throw error;
+        }
+
+        const profile = await fetchMyProfile();
+        if (!profile) {
+          setAuthStatus('登录成功但未找到 profile 记录，请联系管理员', true);
+          await supabaseClient.auth.signOut();
+          return;
+        }
+        if (profile.status !== 'approved') {
+          const label = { pending: '待审核', rejected: '已拒绝', banned: '已封禁' }[profile.status] || profile.status;
+          setAuthStatus(`账户当前状态：${label}，无法进入游戏`, true);
+          await supabaseClient.auth.signOut();
+          return;
+        }
+        currentProfile = profile;
+        try { localStorage.setItem('remembered_email', email); } catch(e) {}
+        document.getElementById('configModal').classList.add('hidden');
+        showScreen('lobbyScreen');
+        showConn(`✓ 欢迎，${profile.display_name || profile.username}`, false);
+        setTimeout(() => hideConn(), 2500);
+      } catch (e) {
+        setAuthStatus((authMode === 'login' ? '登录失败: ' : '注册失败: ') + (e.message || e), true);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = origText;
+      }
+    }
+
+    async function fetchMyProfile() {
+      const { data: { user }, error: uErr } = await supabaseClient.auth.getUser();
+      if (uErr || !user) return null;
+      const { data, error } = await supabaseClient.from('profiles').select('id, username, display_name, status, role').eq('id', user.id).single();
+      if (error) return null;
+      return data;
+    }
+
+    async function signOut() {
+      if (supabaseClient) await supabaseClient.auth.signOut();
+      currentProfile = null;
+      document.getElementById('configModal').classList.remove('hidden');
+      showScreen('configModal');
+    }
+
+    function showConn(msg, isErr) {
+      const bar = document.getElementById('connBar');
+      bar.textContent = msg;
+      bar.className = isErr ? 'conn-bar err' : 'conn-bar ok';
+    }
+    function hideConn() { document.getElementById('connBar').classList.add('hidden'); }
+
+    function showScreen(id) {
+      document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.style.display = 'none'; });
+      const el = document.getElementById(id);
+      el.classList.add('active');
+      el.style.display = 'flex';
+    }
+
+    function generateRoomId() { return Math.random().toString(36).slice(2, 8).toUpperCase(); }
+
+    function createRoom() {
+      myName = document.getElementById('playerName').value.trim() || '玩家' + Math.floor(Math.random() * 999);
+      roomId = generateRoomId();
+      isHost = true;
+      setupChannel();
+      showScreen('waitingScreen');
+      document.getElementById('roomIdDisplay').textContent = roomId;
+    }
+
+    function joinRoom() {
+      myName = document.getElementById('playerName').value.trim() || '玩家' + Math.floor(Math.random() * 999);
+      roomId = document.getElementById('joinRoomId').value.trim().toUpperCase();
+      if (!roomId || roomId.length < 4) { showConn('请输入有效房间号', true); setTimeout(() => hideConn(), 3000); return; }
+      isHost = false;
+      setupChannel();
+      showScreen('waitingScreen');
+      document.getElementById('roomIdDisplay').textContent = roomId;
+    }
+
+    function setupChannel() {
+      if (channel) supabaseClient.removeChannel(channel);
+      channel = supabaseClient.channel(`quiz:${roomId}`, {
+        config: { broadcast: { self: true }, presence: { key: myId } }
+      });
+
+      channel.on('presence', { event: 'sync' }, () => {
+        players = {};
+        const state = channel.presenceState();
+        for (const [key, presences] of Object.entries(state)) {
+          for (const p of presences) players[p.id] = p.name;
+        }
+        updatePlayerList();
+        if (Object.keys(players).length === 2 && !gameActive) {
+          setTimeout(() => startGame(), 1500);
+        }
+      });
+
+      channel.on('broadcast', { event: 'game_start' }, (payload) => {
+        questionOrder = payload.payload.questionOrder;
+        if (!gameActive) beginGame();
+      });
+
+      channel.on('broadcast', { event: 'answer_select' }, (payload) => {
+        const { playerId, playerName, optIndex } = payload.payload;
+        handleAnswerLock(playerId, playerName, optIndex);
+      });
+
+      channel.on('broadcast', { event: 'next_question' }, (payload) => {
+        const { questionIndex } = payload.payload;
+        currentQ = questionIndex;
+        showQuestion(currentQ);
+      });
+
+      channel.on('broadcast', { event: 'game_end' }, (payload) => {
+        const { scores } = payload.payload;
+        endGame(scores);
+      });
+
+      channel.subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') await channel.track({ id: myId, name: myName });
+      });
+    }
+
+    function updatePlayerList() {
+      const list = document.getElementById('playerList');
+      list.innerHTML = '';
+      for (const [id, name] of Object.entries(players)) {
+        const badge = document.createElement('div');
+        badge.className = 'player-badge';
+        badge.innerHTML = `<span class="dot"></span>${name}`;
+        list.appendChild(badge);
+      }
+    }
+
+    /* ── Game Flow ── */
+    function startGame() {
+      gameActive = true;
+      myScore = 0; opponentScore = 0; currentQ = 0;
+      // Host generates question order and broadcasts
+      questionOrder = shuffleArray(QUESTIONS.map((_, i) => i)).slice(0, totalQ);
+      channel.send({ type: 'broadcast', event: 'game_start', payload: { questionOrder } });
+      beginGame();
+    }
+
+    function beginGame() {
+      showScreen('gameScreen');
+      showCountdown(3, () => {
+        showQuestion(currentQ);
+      });
+    }
+
+    function shuffleArray(arr) {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function showQuestion(qIdx) {
+      answered = false;
+      answerLockedBy = null;
+      const q = QUESTIONS[questionOrder[qIdx]];
+      document.getElementById('roundDisplay').textContent = `第 ${qIdx + 1} 题`;
+      document.getElementById('questionCategory').textContent = q.cat;
+      document.getElementById('questionText').textContent = q.q;
+      document.getElementById('lockIndicator').textContent = '等待抢答...';
+
+      const grid = document.getElementById('optionsGrid');
+      grid.innerHTML = '';
+      const labels = ['A', 'B', 'C', 'D'];
+      q.opts.forEach((opt, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn';
+        btn.innerHTML = `<span class="opt-label">${labels[i]}</span>${opt}`;
+        btn.addEventListener('pointerdown', () => onSelectOption(i));
+        grid.appendChild(btn);
+      });
+
+      startQuestionTimer(10);
+      updateScoresUI();
+    }
+
+    function startQuestionTimer(seconds) {
+      timeLeft = seconds;
+      updateTimerUI();
+      clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        updateTimerUI();
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          if (!answered) timeOut();
+        }
+      }, 1000);
+    }
+
+    function updateTimerUI() {
+      document.getElementById('timerDisplay').textContent = timeLeft;
+      const pct = Math.max(0, (timeLeft / 10) * 100);
+      document.getElementById('timerFill').style.width = pct + '%';
+    }
+
+    function onSelectOption(optIndex) {
+      if (answered || answerLockedBy || !gameActive) return;
+      answered = true;
+      answerLockedBy = myId;
+
+      channel.send({
+        type: 'broadcast',
+        event: 'answer_select',
+        payload: { playerId: myId, playerName: myName, optIndex }
+      });
+
+      // Local immediate feedback
+      lockInAnswer(myId, myName, optIndex);
+    }
+
+    function handleAnswerLock(playerId, playerName, optIndex) {
+      if (answered || !gameActive) return;
+      answered = true;
+      answerLockedBy = playerId;
+      lockInAnswer(playerId, playerName, optIndex);
+    }
+
+    function lockInAnswer(playerId, playerName, optIndex) {
+      clearInterval(timerInterval);
+      document.getElementById('lockIndicator').innerHTML = `<span class="lock-name">${playerName}</span> 已锁定答案`;
+
+      const q = QUESTIONS[questionOrder[currentQ]];
+      const btns = document.querySelectorAll('.option-btn');
+      btns.forEach(b => b.classList.add('disabled'));
+
+      // Highlight selected
+      btns[optIndex].classList.remove('disabled');
+
+      // Reveal correct answer after brief pause
+      setTimeout(() => {
+        btns[q.ans].classList.add('correct');
+        if (optIndex !== q.ans) btns[optIndex].classList.add('wrong');
+
+        // Score
+        if (optIndex === q.ans) {
+          if (playerId === myId) myScore += 10 + timeLeft;
+          else opponentScore += 10 + timeLeft;
+        }
+        updateScoresUI();
+
+        // Next question after pause
+        setTimeout(() => {
+          currentQ++;
+          if (currentQ >= totalQ) {
+            endGame(null);
+          } else {
+            if (isHost) {
+              channel.send({ type: 'broadcast', event: 'next_question', payload: { questionIndex: currentQ } });
+            }
+            showQuestion(currentQ);
+          }
+        }, 2000);
+      }, 800);
+    }
+
+    function timeOut() {
+      if (!gameActive) return;
+      const q = QUESTIONS[questionOrder[currentQ]];
+      const btns = document.querySelectorAll('.option-btn');
+      btns.forEach(b => b.classList.add('disabled'));
+      btns[q.ans].classList.add('correct');
+      document.getElementById('lockIndicator').textContent = '时间到！无人抢答';
+
+      setTimeout(() => {
+        currentQ++;
+        if (currentQ >= totalQ) {
+          endGame(null);
+        } else {
+          if (isHost) channel.send({ type: 'broadcast', event: 'next_question', payload: { questionIndex: currentQ } });
+          showQuestion(currentQ);
+        }
+      }, 2000);
+    }
+
+    function updateScoresUI() {
+      const container = document.getElementById('scoresDisplay');
+      container.innerHTML = '';
+      for (const [id, name] of Object.entries(players)) {
+        const score = id === myId ? myScore : opponentScore;
+        const pill = document.createElement('div');
+        pill.className = 'score-pill';
+        pill.innerHTML = `<span class="sp-name">${name}</span><span class="sp-val">${score}</span>`;
+        container.appendChild(pill);
+      }
+    }
+
+    function endGame(scores) {
+      gameActive = false;
+      clearInterval(timerInterval);
+
+      if (scores) {
+        for (const [id, s] of Object.entries(scores)) {
+          if (id === myId) myScore = s;
+          else opponentScore = s;
+        }
+      }
+
+      const winnerId = myScore > opponentScore ? myId :
+                       opponentScore > myScore ? Object.keys(players).find(id => id !== myId) : null;
+
+      showScreen('resultScreen');
+      const icon = document.getElementById('resultIcon');
+      const title = document.getElementById('resultTitle');
+      if (winnerId === myId) { icon.textContent = '🏆'; title.textContent = '你赢了！'; }
+      else if (winnerId) { icon.textContent = '👏'; title.textContent = `${players[winnerId]} 获胜`; }
+      else { icon.textContent = '🤝'; title.textContent = '平局！'; }
+
+      if (isHost) {
+        const finalScores = {};
+        for (const [id] of Object.entries(players)) finalScores[id] = id === myId ? myScore : opponentScore;
+        channel.send({ type: 'broadcast', event: 'game_end', payload: { scores: finalScores } });
+      }
+
+      const container = document.getElementById('resultScores');
+      container.innerHTML = '';
+      for (const [id, name] of Object.entries(players)) {
+        const score = id === myId ? myScore : opponentScore;
+        const div = document.createElement('div');
+        div.className = 'result-player' + (id === winnerId ? ' winner' : '');
+        div.innerHTML = `<div class="rp-name">${name}</div><div class="rp-score">${score}</div>`;
+        container.appendChild(div);
+      }
+    }
+
+    function showCountdown(n, cb) {
+      const overlay = document.createElement('div');
+      overlay.className = 'countdown-overlay';
+      overlay.textContent = n;
+      document.body.appendChild(overlay);
+      let count = n;
+      const iv = setInterval(() => {
+        count--;
+        if (count <= 0) { clearInterval(iv); overlay.remove(); cb(); }
+        else {
+          overlay.textContent = count;
+          overlay.style.animation = 'none';
+          requestAnimationFrame(() => overlay.style.animation = 'countPulse 0.6s ease-out-quart');
+        }
+      }, 800);
+    }
+
+    function backToLobby() {
+      if (channel) { supabaseClient.removeChannel(channel); channel = null; }
+      players = {}; gameActive = false;
+      showScreen('lobbyScreen');
+    }
+
+    /* ── Init ── */
+    (function prefillAuth() {
+      const remembered = localStorage.getItem('remembered_email');
+      if (remembered) document.getElementById('authEmail').value = remembered;
+    })();
+  </script>
+
+  <script>
+  (function() {
+    'use strict';
+    var canvas = document.getElementById('bgCanvas');
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+    var W = 0, H = 0, dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var CELL = 40;
+    var cols = 0, rows = 0;
+    var METEOR_COLORS = [
+      { r: 120, g: 130, b: 255 },
+      { r: 255, g: 180, b: 90 },
+      { r: 255, g: 120, b: 200 },
+      { r: 100, g: 255, b: 180 },
+      { r: 180, g: 140, b: 255 }
+    ];
+    function resize() {
+      W = window.innerWidth; H = window.innerHeight;
+      canvas.width = W * dpr; canvas.height = H * dpr;
+      canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      cols = Math.ceil(W / CELL) + 1; rows = Math.ceil(H / CELL) + 1;
+    }
+    function drawGrid() {
+      ctx.strokeStyle = 'rgba(110, 120, 200, 0.2)'; ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (var i = 0; i <= cols; i++) { var x = i * CELL; ctx.moveTo(x, 0); ctx.lineTo(x, H); }
+      for (var j = 0; j <= rows; j++) { var y = j * CELL; ctx.moveTo(0, y); ctx.lineTo(W, y); }
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(120, 130, 255, 0.3)';
+      for (var i2 = 0; i2 <= cols; i2++) for (var j2 = 0; j2 <= rows; j2++) ctx.fillRect(i2 * CELL - 0.5, j2 * CELL - 0.5, 1, 1);
+    }
+    function Meteor() {
+      this.horizontal = Math.random() > 0.5;
+      var c = METEOR_COLORS[Math.floor(Math.random() * METEOR_COLORS.length)];
+      this.r = c.r; this.g = c.g; this.b = c.b;
+      this.speed = 1.5 + Math.random() * 3;
+      this.tailLen = 100 + Math.random() * 180;
+      this.life = 0; this.maxLife = 200 + Math.random() * 300;
+      this.thickness = 1.5 + Math.random() * 1.5;
+      if (this.horizontal) {
+        this.row = Math.floor(Math.random() * rows);
+        this.y = this.row * CELL + CELL / 2;
+        this.reverse = Math.random() > 0.5;
+        this.x = this.reverse ? W + 50 : -50;
+        this.vx = this.reverse ? -this.speed : this.speed; this.vy = 0;
+      } else {
+        this.col = Math.floor(Math.random() * cols);
+        this.x = this.col * CELL + CELL / 2;
+        this.reverse = Math.random() > 0.5;
+        this.y = this.reverse ? H + 50 : -50;
+        this.vx = 0; this.vy = this.reverse ? -this.speed : this.speed;
+      }
+    }
+    Meteor.prototype.alpha = function() {
+      var fadeIn = 40, fadeOut = 80;
+      if (this.life < fadeIn) return this.life / fadeIn;
+      if (this.life > this.maxLife - fadeOut) return Math.max(0, (this.maxLife - this.life) / fadeOut);
+      return 1;
+    };
+    Meteor.prototype.update = function() {
+      this.life++; this.x += this.vx; this.y += this.vy;
+      if (this.horizontal) {
+        if (this.reverse && this.x < -this.tailLen) return false;
+        if (!this.reverse && this.x > W + this.tailLen) return false;
+      } else {
+        if (this.reverse && this.y < -this.tailLen) return false;
+        if (!this.reverse && this.y > H + this.tailLen) return false;
+      }
+      if (this.life > this.maxLife) return false;
+      return true;
+    };
+    Meteor.prototype.draw = function() {
+      var a = this.alpha(); if (a <= 0) return;
+      var c = this.r + ', ' + this.g + ', ' + this.b;
+      var tx = this.x - this.vx * (this.tailLen / this.speed);
+      var ty = this.y - this.vy * (this.tailLen / this.speed);
+      var grad = ctx.createLinearGradient(this.x, this.y, tx, ty);
+      grad.addColorStop(0, 'rgba(' + c + ', ' + (0.9 * a) + ')');
+      grad.addColorStop(0.3, 'rgba(' + c + ', ' + (0.4 * a) + ')');
+      grad.addColorStop(1, 'rgba(' + c + ', 0)');
+      ctx.strokeStyle = grad; ctx.lineWidth = this.thickness; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(this.x, this.y); ctx.lineTo(tx, ty); ctx.stroke();
+      ctx.shadowColor = 'rgba(' + c + ', ' + a + ')'; ctx.shadowBlur = 16;
+      ctx.fillStyle = 'rgba(' + c + ', ' + a + ')';
+      ctx.beginPath(); ctx.arc(this.x, this.y, this.thickness * 1.5, 0, Math.PI * 2); ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = 'rgba(255, 255, 255, ' + (0.7 * a) + ')';
+      ctx.beginPath(); ctx.arc(this.x, this.y, this.thickness * 0.6, 0, Math.PI * 2); ctx.fill();
+    };
+    var meteors = []; var MAX_METEORS = 60; var spawnCooldown = 0;
+    function spawnMeteor() { if (meteors.length < MAX_METEORS) meteors.push(new Meteor()); }
+    function loop() {
+      ctx.clearRect(0, 0, W, H); drawGrid();
+      meteors = meteors.filter(function(m) { var alive = m.update(); if (alive) m.draw(); return alive; });
+      if (spawnCooldown <= 0 && meteors.length < MAX_METEORS) { spawnMeteor(); spawnCooldown = 20 + Math.random() * 100; }
+      spawnCooldown--;
+      if (meteors.length === 0) { spawnMeteor(); spawnMeteor(); }
+      requestAnimationFrame(loop);
+    }
+    resize(); window.addEventListener('resize', resize);
+    for (var i = 0; i < 3; i++) spawnMeteor();
+    loop();
+  })();
+  </script>
+</body>
+</html>

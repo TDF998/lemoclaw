@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>翻牌记忆战 · Memory Card Battle</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Noto+Sans+SC:wght@300;400;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: oklch(14% 0.04 160);
+      --felt: oklch(22% 0.06 160);
+      --surface: oklch(28% 0.08 160);
+      --surface-high: oklch(34% 0.1 160);
+      --accent: oklch(68% 0.14 85);
+      --accent-warm: oklch(72% 0.16 75);
+      --text: oklch(92% 0.04 160);
+      --text-muted: oklch(55% 0.06 160);
+      --green: oklch(58% 0.16 150);
+      --danger: oklch(55% 0.22 20);
+      --gold: oklch(72% 0.14 85);
+      --radius: 14px;
+      --font-display: 'Playfair Display', serif;
+      --font-body: 'Noto Sans SC', sans-serif;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: linear-gradient(135deg, oklch(14% 0.04 160) 0%, oklch(18% 0.05 155) 40%, oklch(10% 0.03 165) 100%);
+      color: var(--text);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      overflow-x: hidden;
+    }
+
+    #bgCanvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+
+    #app { width: 1200px; max-width: 100%; min-height: 100vh; position: relative; z-index: 1; }
+
+    /* ── Modal ── */
+    .modal-overlay { position: fixed; inset: 0; background: oklch(10% 0.04 160 / 0.85); backdrop-filter: blur(12px); display: flex; align-items: center; justify-content: center; z-index: 100; }
+    .modal-overlay.hidden { display: none; }
+    .modal-card { background: var(--surface); border: 1px solid oklch(45% 0.08 85); border-radius: var(--radius); padding: clamp(24px, 4vw, 40px); width: min(480px, 90vw); box-shadow: 0 32px 80px oklch(0% 0 0 / 0.5); }
+    .modal-card h2 { font-family: var(--font-display); font-size: clamp(20px, 3vw, 28px); margin-bottom: 8px; color: var(--gold); }
+    .modal-card p { color: var(--text-muted); font-size: 14px; margin-bottom: 24px; line-height: 1.6; }
+    .field-group { margin-bottom: 16px; }
+    .field-group label { display: block; font-size: 13px; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; }
+    .field-group input { width: 100%; padding: 10px 14px; background: var(--bg); border: 1px solid oklch(45% 0.08 85); border-radius: 10px; color: var(--text); font-family: var(--font-body); font-size: 14px; outline: none; transition: border-color 0.2s; }
+    .field-group input:focus { border-color: var(--gold); }
+    .btn { display: inline-flex; align-items: center; justify-content: center; padding: 12px 24px; border-radius: 10px; font-family: var(--font-display); font-size: 14px; cursor: pointer; border: none; transition: transform 0.15s ease-out-quart; user-select: none; }
+    .btn:active { transform: scale(0.95); }
+    .btn-primary { background: var(--gold); color: oklch(10% 0.04 160); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+
+    .auth-tabs { display: flex; gap: 4px; background: var(--surface-high); padding: 4px; border-radius: 10px; margin: 8px 0 16px; }
+    .auth-tab { flex: 1; padding: 10px 12px; border: none; background: transparent; color: var(--text-dim); font-size: 14px; font-weight: 600; border-radius: 7px; cursor: pointer; transition: all 0.2s; }
+    .auth-tab.active { background: var(--gold); color: oklch(10% 0.04 160); box-shadow: 0 2px 8px oklch(78% 0.16 85 / 0.3); }
+    .auth-status { margin: 12px 0 0; min-height: 20px; font-size: 13px; text-align: center; line-height: 1.4; }
+    .auth-status.ok  { color: var(--green); }
+    .auth-status.err { color: var(--accent); }
+    .hint { color: var(--text-dim); font-size: 12px; font-weight: 400; }
+    #signupExtra.hidden { display: none; }
+    .btn-secondary { background: var(--surface-high); color: var(--text); border: 1px solid oklch(45% 0.08 85); }
+
+    /* ── Screen ── */
+    .screen { display: none; padding: clamp(16px, 3vw, 32px); position: relative; z-index: 1; }
+    .screen.active { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; }
+
+    /* ── Lobby ── */
+    .lobby-icon { font-size: clamp(56px, 8vw, 96px); margin-bottom: 16px; }
+    .lobby-title { font-family: var(--font-display); font-size: clamp(36px, 7vw, 72px); text-align: center; color: var(--gold); margin-bottom: 4px; letter-spacing: -0.02em; }
+    .lobby-subtitle { font-size: clamp(14px, 2vw, 18px); color: var(--text-muted); text-align: center; margin-bottom: clamp(32px, 5vw, 48px); }
+    .lobby-form { display: flex; flex-direction: column; gap: 16px; width: min(360px, 90vw); }
+
+    /* ── Waiting ── */
+    .waiting-card { background: var(--surface); border: 1px solid oklch(45% 0.08 85); border-radius: var(--radius); padding: clamp(24px, 4vw, 40px); width: min(480px, 90vw); text-align: center; }
+    .waiting-card h2 { font-family: var(--font-display); font-size: clamp(18px, 3vw, 24px); color: var(--gold); margin-bottom: 16px; }
+    .room-id { font-family: var(--font-display); font-size: clamp(28px, 4vw, 40px); color: var(--gold); background: var(--bg); padding: 12px 24px; border-radius: 10px; margin: 12px 0 24px; letter-spacing: 0.08em; border: 2px dashed oklch(50% 0.08 85); }
+    .player-list { display: flex; gap: 12px; justify-content: center; margin-bottom: 24px; flex-wrap: wrap; }
+    .player-badge { display: flex; align-items: center; gap: 8px; background: var(--surface-high); padding: 8px 16px; border-radius: 10px; font-size: 14px; font-weight: 700; }
+    .player-badge .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--green); animation: pulse-dot 1.5s infinite; }
+    @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+    .waiting-hint { color: var(--text-muted); font-size: 14px; }
+
+    /* ── Game ── */
+    .game-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: clamp(10px, 2vw, 16px) clamp(16px, 3vw, 24px);
+      background: var(--felt);
+      border-bottom: 2px solid oklch(40% 0.06 85 / 0.15);
+      flex-wrap: wrap; gap: 12px;
+    }
+    .game-turn {
+      font-family: var(--font-display);
+      font-size: clamp(14px, 2vw, 20px);
+    }
+    .game-turn.my-turn { color: var(--gold); }
+    .game-turn.other-turn { color: var(--text-muted); }
+    .game-scores { display: flex; gap: clamp(8px, 1.5vw, 16px); }
+    .score-pill {
+      display: flex; align-items: center; gap: 6px;
+      background: var(--surface-high);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+    .score-pill .sp-name { color: var(--text-muted); font-weight: 700; }
+    .score-pill .sp-val { font-family: var(--font-display); font-size: clamp(16px, 2vw, 20px); color: var(--gold); }
+
+    /* ── Card Grid ── */
+    .card-area {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: clamp(12px, 2vw, 24px);
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: clamp(8px, 1.5vw, 16px);
+      width: min(520px, 90vw);
+    }
+
+    .card-wrapper {
+      perspective: 800px;
+      aspect-ratio: 3/4;
+    }
+
+    .card {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+      transition: transform 0.4s ease-out-quart;
+      cursor: pointer;
+      border-radius: 10px;
+    }
+
+    .card.flipped {
+      transform: rotateY(180deg);
+    }
+
+    .card-face {
+      position: absolute;
+      inset: 0;
+      border-radius: 10px;
+      backface-visibility: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(24px, 4vw, 40px);
+    }
+
+    .card-back {
+      background: var(--surface);
+      border: 2px solid oklch(45% 0.08 85 / 0.3);
+      overflow: hidden;
+      position: relative;
+    }
+    .card-back::before {
+      content: '';
+      position: absolute;
+      inset: 8px;
+      border-radius: 6px;
+      border: 1px solid oklch(45% 0.08 85 / 0.15);
+      background: repeating-linear-gradient(
+        45deg,
+        oklch(30% 0.08 160),
+        oklch(30% 0.08 160) 4px,
+        oklch(26% 0.06 160) 4px,
+        oklch(26% 0.06 160) 8px
+      );
+    }
+    .card-back::after {
+      content: '✦';
+      position: absolute;
+      font-size: clamp(16px, 2vw, 24px);
+      color: oklch(45% 0.08 85 / 0.3);
+      z-index: 2;
+    }
+
+    .card-front {
+      background: oklch(95% 0.04 85);
+      transform: rotateY(180deg);
+      border: 2px solid var(--gold);
+      box-shadow: 0 4px 16px oklch(68% 0.14 85 / 0.2);
+    }
+
+    .card.matched .card-front {
+      background: oklch(28% 0.08 160);
+      border-color: var(--green);
+      color: var(--text);
+    }
+    .card.matched {
+      opacity: 0.7;
+      cursor: default;
+    }
+    .card.match-flash .card-front {
+      animation: matchGlow 0.6s ease-out-quart;
+    }
+    @keyframes matchGlow {
+      0% { box-shadow: 0 0 40px oklch(58% 0.16 150 / 0.6); }
+      100% { box-shadow: 0 4px 16px oklch(68% 0.14 85 / 0.2); }
+    }
+    .card.no-match .card-front {
+      animation: noMatchShake 0.4s;
+      border-color: var(--danger);
+    }
+    @keyframes noMatchShake {
+      0%, 100% { transform: rotateY(180deg) translateX(0); }
+      25% { transform: rotateY(180deg) translateX(-4px); }
+      75% { transform: rotateY(180deg) translateX(4px); }
+    }
+
+    .card.disabled {
+      cursor: default;
+      pointer-events: none;
+    }
+
+    /* ── Turn indicator ── */
+    .turn-banner {
+      position: fixed;
+      bottom: clamp(12px, 2vw, 24px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--surface);
+      border: 1px solid oklch(45% 0.08 85 / 0.2);
+      padding: 10px 24px;
+      border-radius: 10px;
+      font-family: var(--font-display);
+      font-size: clamp(14px, 2vw, 18px);
+      z-index: 10;
+      transition: background 0.3s, border-color 0.3s;
+      white-space: nowrap;
+    }
+    .turn-banner.my-turn {
+      background: oklch(28% 0.1 85);
+      border-color: var(--gold);
+      color: var(--gold);
+    }
+    .turn-banner.other-turn {
+      color: var(--text-muted);
+    }
+
+    /* ── Result ── */
+    .result-card { background: var(--surface); border: 1px solid oklch(45% 0.08 85); border-radius: var(--radius); padding: clamp(32px, 5vw, 48px); width: min(520px, 90vw); text-align: center; }
+    .result-icon { font-size: 64px; margin-bottom: 12px; }
+    .result-title { font-family: var(--font-display); font-size: clamp(28px, 4vw, 40px); color: var(--gold); margin-bottom: 24px; }
+    .result-scores { display: flex; gap: 24px; justify-content: center; margin-bottom: 32px; flex-wrap: wrap; }
+    .result-player { background: var(--surface-high); padding: 16px 24px; border-radius: 12px; min-width: 160px; }
+    .result-player.winner { border: 2px solid var(--gold); box-shadow: 0 8px 32px oklch(68% 0.14 85 / 0.2); }
+    .result-player .rp-name { font-weight: 700; font-size: 16px; margin-bottom: 8px; }
+    .result-player .rp-score { font-family: var(--font-display); font-size: clamp(24px, 4vw, 36px); color: var(--gold); }
+    .result-player .rp-pairs { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+
+    /* ── Conn ── */
+    .conn-bar { position: fixed; top: 0; left: 0; right: 0; padding: 8px 16px; text-align: center; font-size: 13px; font-weight: 700; z-index: 50; }
+    .conn-bar.ok { background: var(--green); color: oklch(98% 0 0); }
+    .conn-bar.err { background: var(--danger); color: oklch(98% 0 0); }
+    .conn-bar.hidden { transform: translateY(-100%); opacity: 0; }
+
+    .fade-in { animation: fadeIn 0.4s ease-out-quart; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+    .countdown-overlay {
+      position: fixed; inset: 0; background: oklch(10% 0.04 160 / 0.7); display: flex; align-items: center; justify-content: center; z-index: 80;
+      font-family: var(--font-display); font-size: clamp(64px, 12vw, 120px); color: var(--gold);
+      animation: countPulse 0.6s ease-out-quart;
+    }
+    @keyframes countPulse { 0% { transform: scale(2); opacity: 0; } 50% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .card-grid { grid-template-columns: repeat(4, 1fr); width: min(360px, 90vw); gap: clamp(4px, 1vw, 8px); }
+      .game-header { justify-content: center; }
+    }
+    @media (pointer: coarse) {
+      .card { border-radius: 8px; }
+      .card-face { border-radius: 8px; }
+      .btn { padding: 14px 28px; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="bgCanvas"></canvas>
+  <div id="app">
+    <div id="connBar" class="conn-bar hidden"></div>
+
+    <!-- Auth Modal -->
+    <div id="configModal" class="modal-overlay">
+      <div class="modal-card fade-in">
+        <h2>🃏 账户登录</h2>
+        <p>使用你在 Supabase 项目下注册的账户登录。仅 <strong>status = approved</strong> 的账户可进入对战。</p>
+        <div class="auth-tabs">
+          <button id="tabLogin" class="auth-tab active" onclick="switchAuthTab('login')">登录</button>
+          <button id="tabSignup" class="auth-tab" onclick="switchAuthTab('signup')">注册</button>
+        </div>
+        <div class="field-group"><label>邮箱</label><input id="authEmail" type="email" placeholder="you@example.com" autocomplete="email"></div>
+        <div class="field-group"><label>密码 <span class="hint">(至少 6 位)</span></label><input id="authPassword" type="password" placeholder="••••••••" autocomplete="current-password"></div>
+        <div id="signupExtra" class="hidden"><div class="field-group"><label>昵称</label><input id="authUsername" type="text" placeholder="昵称 (房间内显示)" maxlength="12"></div></div>
+        <button id="authSubmitBtn" class="btn btn-primary" onclick="handleAuth()">登录</button>
+        <p class="auth-status" id="authStatus"></p>
+      </div>
+    </div>
+
+    <!-- Lobby -->
+    <div id="lobbyScreen" class="screen">
+      <div class="lobby-icon">🃏</div>
+      <h1 class="lobby-title">翻牌记忆战</h1>
+      <p class="lobby-subtitle">翻牌配对，记忆比拼——谁的眼睛更敏锐？</p>
+      <div class="lobby-form">
+        <div class="field-group"><label>你的昵称</label><input id="playerName" placeholder="记忆高手昵称" maxlength="12"></div>
+        <button class="btn btn-primary" onclick="createRoom()">创建房间</button>
+        <div class="field-group"><label>加入房间</label><input id="joinRoomId" placeholder="输入房间号" maxlength="6"></div>
+        <button class="btn btn-secondary" onclick="joinRoom()">加入对战</button>
+      </div>
+    </div>
+
+    <!-- Waiting -->
+    <div id="waitingScreen" class="screen">
+      <div class="waiting-card fade-in">
+        <h2>等待对手加入</h2>
+        <div class="room-id" id="roomIdDisplay">------</div>
+        <p class="waiting-hint">将房间号分享给朋友...</p>
+        <div class="player-list" id="playerList"></div>
+      </div>
+    </div>
+
+    <!-- Game -->
+    <div id="gameScreen" class="screen" style="display:none;">
+      <div class="game-header">
+        <div class="game-turn" id="turnDisplay">你的回合</div>
+        <div class="game-scores" id="scoresDisplay"></div>
+      </div>
+      <div class="card-area">
+        <div class="card-grid" id="cardGrid"></div>
+      </div>
+      <div class="turn-banner" id="turnBanner">你的回合 — 翻两张牌</div>
+    </div>
+
+    <!-- Result -->
+    <div id="resultScreen" class="screen">
+      <div class="result-card fade-in">
+        <div class="result-icon" id="resultIcon">🏆</div>
+        <div class="result-title" id="resultTitle">对战结束</div>
+        <div class="result-scores" id="resultScores"></div>
+        <button class="btn btn-primary" onclick="backToLobby()">再来一局</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ── Card Symbols ── */
+    const CARD_SYMBOLS = ['🌸', '🔥', '💎', '⭐', '🦊', '🌙', '🎵', '🍀'];
+
+    /* ── State ── */
+    let channel = null;
+    let myId = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2);
+    let myName = '', roomId = '';
+    let players = {};
+    let playerOrder = []; // Order of turns
+    let myScore = 0, opponentScore = 0;
+    let myPairs = 0, opponentPairs = 0;
+    let currentTurnIndex = 0;
+    let isMyTurn = false;
+    let flippedCards = []; // Currently flipped cards (max 2)
+    let matchedCards = new Set(); // Indices of matched cards
+    let cardLayout = []; // Symbol assignment for each card
+    let gameActive = false;
+    let isHost = false;
+    let totalPairs = 8;
+    let processingFlip = false;
+
+    /* ── Auth ── */
+    let authMode = 'login';
+    let currentProfile = null;
+
+    function switchAuthTab(mode) {
+      authMode = mode;
+      const isLogin = mode === 'login';
+      document.getElementById('tabLogin').classList.toggle('active', isLogin);
+      document.getElementById('tabSignup').classList.toggle('active', !isLogin);
+      document.getElementById('signupExtra').classList.toggle('hidden', isLogin);
+      document.getElementById('authSubmitBtn').textContent = isLogin ? '登录' : '注册并申请审核';
+      document.getElementById('authPassword').autocomplete = isLogin ? 'current-password' : 'new-password';
+      document.getElementById('authStatus').textContent = '';
+      document.getElementById('authStatus').className = 'auth-status';
+    }
+
+    function setAuthStatus(msg, isErr) {
+      const el = document.getElementById('authStatus');
+      el.textContent = msg;
+      el.className = 'auth-status' + (isErr ? ' err' : ' ok');
+    }
+
+    function initSupabase() { /* 保留函数签名兼容，但已由顶部硬编码取代 */ }
+
+    // ================================================================
+    //  🔧 配置区域 — 请替换为你自己的 Supabase 项目信息
+    // ================================================================
+    const SUPABASE_URL = 'https://zsyswamtmhqitsqbolut.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_lkwHgCi9HYVKgHxVTw_7UQ_U5PRng_W';
+
+    if (SUPABASE_URL.includes('YOUR_PROJECT') || SUPABASE_ANON_KEY.includes('YOUR_ANON_KEY')) {
+      alert('⚠️ 请先在代码顶部配置 SUPABASE_URL 和 SUPABASE_ANON_KEY');
+    }
+
+    // ================================================================
+    //  初始化 Supabase
+    // ================================================================
+    if (typeof supabase === 'undefined' || !supabase.createClient) {
+      console.error('Supabase SDK not loaded');
+      document.addEventListener('DOMContentLoaded', () => {
+        setAuthStatus('Supabase SDK 加载失败，请检查网络后刷新', true);
+      });
+    }
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { storage: sessionStorage }
+    });
+
+    async function handleAuth() {
+      const email = document.getElementById('authEmail').value.trim();
+      const password = document.getElementById('authPassword').value;
+      const username = document.getElementById('authUsername').value.trim();
+      if (!email || !password) { setAuthStatus('请填写邮箱和密码', true); return; }
+      if (password.length < 6) { setAuthStatus('密码至少 6 位', true); return; }
+      if (authMode === 'signup' && !username) { setAuthStatus('请填写昵称', true); return; }
+
+      const btn = document.getElementById('authSubmitBtn');
+      btn.disabled = true;
+      const origText = btn.textContent;
+      btn.textContent = authMode === 'login' ? '登录中…' : '注册中…';
+
+      try {
+        if (authMode === 'signup') {
+          const { data, error } = await supabaseClient.auth.signUp({
+            email, password,
+            options: { data: { username, display_name: username } }
+          });
+          if (error) throw error;
+          if (!data.session) {
+            setAuthStatus('注册成功！请去邮箱点击确认链接后再登录（可在 Supabase 控制台关闭 Email Confirm）', false);
+            switchAuthTab('login');
+            return;
+          }
+        } else {
+          const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+          if (error) throw error;
+        }
+
+        const profile = await fetchMyProfile();
+        if (!profile) {
+          setAuthStatus('登录成功但未找到 profile 记录，请联系管理员', true);
+          await supabaseClient.auth.signOut();
+          return;
+        }
+        if (profile.status !== 'approved') {
+          const label = { pending: '待审核', rejected: '已拒绝', banned: '已封禁' }[profile.status] || profile.status;
+          setAuthStatus(`账户当前状态：${label}，无法进入游戏`, true);
+          await supabaseClient.auth.signOut();
+          return;
+        }
+        currentProfile = profile;
+        try { localStorage.setItem('remembered_email', email); } catch(e) {}
+        document.getElementById('configModal').classList.add('hidden');
+        showScreen('lobbyScreen');
+        showConn(`✓ 欢迎，${profile.display_name || profile.username}`, false);
+        setTimeout(() => hideConn(), 2500);
+      } catch (e) {
+        setAuthStatus((authMode === 'login' ? '登录失败: ' : '注册失败: ') + (e.message || e), true);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = origText;
+      }
+    }
+
+    async function fetchMyProfile() {
+      const { data: { user }, error: uErr } = await supabaseClient.auth.getUser();
+      if (uErr || !user) return null;
+      const { data, error } = await supabaseClient.from('profiles').select('id, username, display_name, status, role').eq('id', user.id).single();
+      if (error) return null;
+      return data;
+    }
+
+    async function signOut() {
+      if (supabaseClient) await supabaseClient.auth.signOut();
+      currentProfile = null;
+      document.getElementById('configModal').classList.remove('hidden');
+      showScreen('configModal');
+    }
+
+    function showConn(msg, isErr) { const bar = document.getElementById('connBar'); bar.textContent = msg; bar.className = isErr ? 'conn-bar err' : 'conn-bar ok'; }
+    function hideConn() { document.getElementById('connBar').classList.add('hidden'); }
+    function showScreen(id) { document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.style.display = 'none'; }); const el = document.getElementById(id); el.classList.add('active'); el.style.display = 'flex'; }
+    function generateRoomId() { return Math.random().toString(36).slice(2, 8).toUpperCase(); }
+
+    function createRoom() {
+      myName = document.getElementById('playerName').value.trim() || '记忆' + Math.floor(Math.random() * 999);
+      roomId = generateRoomId();
+      isHost = true;
+      setupChannel();
+      showScreen('waitingScreen');
+      document.getElementById('roomIdDisplay').textContent = roomId;
+    }
+
+    function joinRoom() {
+      myName = document.getElementById('playerName').value.trim() || '记忆' + Math.floor(Math.random() * 999);
+      roomId = document.getElementById('joinRoomId').value.trim().toUpperCase();
+      if (!roomId || roomId.length < 4) { showConn('请输入有效房间号', true); setTimeout(() => hideConn(), 3000); return; }
+      isHost = false;
+      setupChannel();
+      showScreen('waitingScreen');
+      document.getElementById('roomIdDisplay').textContent = roomId;
+    }
+
+    function setupChannel() {
+      if (channel) supabaseClient.removeChannel(channel);
+      channel = supabaseClient.channel(`memory:${roomId}`, {
+        config: { broadcast: { self: true }, presence: { key: myId } }
+      });
+
+      channel.on('presence', { event: 'sync' }, () => {
+        players = {};
+        const state = channel.presenceState();
+        for (const [key, presences] of Object.entries(state)) {
+          for (const p of presences) players[p.id] = p.name;
+        }
+        updatePlayerList();
+        if (Object.keys(players).length === 2 && !gameActive) {
+          setTimeout(() => startGame(), 1500);
+        }
+      });
+
+      channel.on('broadcast', { event: 'game_start' }, (payload) => {
+        const { cards, playerOrder } = payload.payload;
+        cardLayout = cards;
+        playerOrder = playerOrder;
+        if (!gameActive) beginGame();
+      });
+
+      channel.on('broadcast', { event: 'card_flip' }, (payload) => {
+        const { playerId, cardIndex } = payload.payload;
+        handleRemoteFlip(playerId, cardIndex);
+      });
+
+      channel.on('broadcast', { event: 'cards_matched' }, (payload) => {
+        const { playerId, card1, card2 } = payload.payload;
+        handleMatch(playerId, card1, card2);
+      });
+
+      channel.on('broadcast', { event: 'cards_no_match' }, (payload) => {
+        const { playerId, card1, card2 } = payload.payload;
+        handleNoMatch(playerId, card1, card2);
+      });
+
+      channel.on('broadcast', { event: 'turn_change' }, (payload) => {
+        const { turnIndex } = payload.payload;
+        currentTurnIndex = turnIndex;
+        updateTurnUI();
+      });
+
+      channel.on('broadcast', { event: 'game_end' }, () => {
+        endGame();
+      });
+
+      channel.subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') await channel.track({ id: myId, name: myName });
+      });
+    }
+
+    function updatePlayerList() {
+      const list = document.getElementById('playerList');
+      list.innerHTML = '';
+      for (const [id, name] of Object.entries(players)) {
+        const badge = document.createElement('div');
+        badge.className = 'player-badge';
+        badge.innerHTML = `<span class="dot"></span>${name}`;
+        list.appendChild(badge);
+      }
+    }
+
+    /* ── Game Flow ── */
+    function startGame() {
+      gameActive = true;
+      myScore = 0; opponentScore = 0;
+      myPairs = 0; opponentPairs = 0;
+      flippedCards = [];
+      matchedCards.clear();
+      processingFlip = false;
+
+      if (isHost) {
+        // Generate card layout: 16 cards (8 pairs)
+        const symbols = [...CARD_SYMBOLS, ...CARD_SYMBOLS];
+        cardLayout = shuffleArray(symbols);
+        playerOrder = Object.keys(players);
+        currentTurnIndex = 0;
+
+        channel.send({
+          type: 'broadcast',
+          event: 'game_start',
+          payload: { cards: cardLayout, playerOrder }
+        });
+      }
+
+      beginGame();
+    }
+
+    function shuffleArray(arr) {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function beginGame() {
+      showScreen('gameScreen');
+      buildCardGrid();
+      updateTurnUI();
+      updateScoresUI();
+    }
+
+    function buildCardGrid() {
+      const grid = document.getElementById('cardGrid');
+      grid.innerHTML = '';
+      for (let i = 0; i < 16; i++) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'card-wrapper';
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.dataset.index = i;
+        card.innerHTML = `
+          <div class="card-face card-back"></div>
+          <div class="card-face card-front">${cardLayout[i]}</div>
+        `;
+        card.addEventListener('pointerdown', () => onCardTap(i));
+        wrapper.appendChild(card);
+        grid.appendChild(wrapper);
+      }
+    }
+
+    function updateTurnUI() {
+      const currentPlayerId = playerOrder[currentTurnIndex];
+      isMyTurn = currentPlayerId === myId;
+
+      const turnDisplay = document.getElementById('turnDisplay');
+      if (isMyTurn) {
+        turnDisplay.textContent = '你的回合';
+        turnDisplay.className = 'game-turn my-turn';
+      } else {
+        turnDisplay.textContent = `${players[currentPlayerId]} 的回合`;
+        turnDisplay.className = 'game-turn other-turn';
+      }
+
+      const turnBanner = document.getElementById('turnBanner');
+      if (isMyTurn) {
+        turnBanner.textContent = '你的回合 — 翻两张牌';
+        turnBanner.className = 'turn-banner my-turn';
+      } else {
+        turnBanner.textContent = `${players[currentPlayerId]} 的回合 — 等待对方翻牌`;
+        turnBanner.className = 'turn-banner other-turn';
+      }
+
+      // Disable/enable cards
+      document.querySelectorAll('.card').forEach(card => {
+        const idx = parseInt(card.dataset.index);
+        if (matchedCards.has(idx) || !isMyTurn) {
+          card.classList.add('disabled');
+        } else {
+          card.classList.remove('disabled');
+        }
+      });
+    }
+
+    function onCardTap(index) {
+      if (!isMyTurn || !gameActive || processingFlip || matchedCards.has(index)) return;
+      if (flippedCards.includes(index)) return;
+
+      flippedCards.push(index);
+      flipCardLocal(index);
+
+      channel.send({
+        type: 'broadcast',
+        event: 'card_flip',
+        payload: { playerId: myId, cardIndex: index }
+      });
+
+      if (flippedCards.length === 2) {
+        processingFlip = true;
+        const [c1, c2] = flippedCards;
+        if (cardLayout[c1] === cardLayout[c2]) {
+          // Match!
+          setTimeout(() => {
+            channel.send({
+              type: 'broadcast',
+              event: 'cards_matched',
+              payload: { playerId: myId, card1: c1, card2: c2 }
+            });
+            handleMatch(myId, c1, c2);
+          }, 600);
+        } else {
+          // No match
+          setTimeout(() => {
+            channel.send({
+              type: 'broadcast',
+              event: 'cards_no_match',
+              payload: { playerId: myId, card1: c1, card2: c2 }
+            });
+            handleNoMatch(myId, c1, c2);
+          }, 1000);
+        }
+      }
+    }
+
+    function handleRemoteFlip(playerId, cardIndex) {
+      flipCardLocal(cardIndex);
+      flippedCards.push(cardIndex);
+    }
+
+    function flipCardLocal(index) {
+      const card = document.querySelector(`.card[data-index="${index}"]`);
+      if (card) card.classList.add('flipped');
+    }
+
+    function unflipCardLocal(index) {
+      const card = document.querySelector(`.card[data-index="${index}"]`);
+      if (card) card.classList.remove('flipped');
+    }
+
+    function handleMatch(playerId, card1, card2) {
+      matchedCards.add(card1);
+      matchedCards.add(card2);
+
+      const card1El = document.querySelector(`.card[data-index="${card1}"]`);
+      const card2El = document.querySelector(`.card[data-index="${card2}"]`);
+      if (card1El) { card1El.classList.add('matched', 'match-flash'); card1El.classList.remove('disabled'); }
+      if (card2El) { card2El.classList.add('matched', 'match-flash'); card2El.classList.remove('disabled'); }
+
+      // Score
+      if (playerId === myId) { myScore += 10; myPairs++; }
+      else { opponentScore += 10; opponentPairs++; }
+
+      flippedCards = [];
+      processingFlip = false;
+      updateScoresUI();
+
+      // Same player gets another turn
+      // No turn change
+
+      // Check if all matched
+      if (matchedCards.size === 16) {
+        setTimeout(() => {
+          if (isHost) channel.send({ type: 'broadcast', event: 'game_end', payload: {} });
+          endGame();
+        }, 1500);
+      } else {
+        updateTurnUI();
+      }
+    }
+
+    function handleNoMatch(playerId, card1, card2) {
+      const card1El = document.querySelector(`.card[data-index="${card1}"]`);
+      const card2El = document.querySelector(`.card[data-index="${card2}"]`);
+      if (card1El) card1El.classList.add('no-match');
+      if (card2El) card2El.classList.add('no-match');
+
+      setTimeout(() => {
+        unflipCardLocal(card1);
+        unflipCardLocal(card2);
+        if (card1El) card1El.classList.remove('no-match');
+        if (card2El) card2El.classList.remove('no-match');
+
+        flippedCards = [];
+        processingFlip = false;
+
+        // Switch turn
+        currentTurnIndex = (currentTurnIndex + 1) % playerOrder.length;
+        channel.send({
+          type: 'broadcast',
+          event: 'turn_change',
+          payload: { turnIndex: currentTurnIndex }
+        });
+        updateTurnUI();
+      }, 500);
+    }
+
+    function updateScoresUI() {
+      const container = document.getElementById('scoresDisplay');
+      container.innerHTML = '';
+      for (const [id, name] of Object.entries(players)) {
+        const score = id === myId ? myScore : opponentScore;
+        const pill = document.createElement('div');
+        pill.className = 'score-pill';
+        pill.innerHTML = `<span class="sp-name">${name}</span><span class="sp-val">${score}</span>`;
+        container.appendChild(pill);
+      }
+    }
+
+    function endGame() {
+      gameActive = false;
+
+      const winnerId = myScore > opponentScore ? myId :
+                       opponentScore > myScore ? Object.keys(players).find(id => id !== myId) : null;
+
+      showScreen('resultScreen');
+      const icon = document.getElementById('resultIcon');
+      const title = document.getElementById('resultTitle');
+      if (winnerId === myId) { icon.textContent = '🏆'; title.textContent = '你赢了！'; }
+      else if (winnerId) { icon.textContent = '👏'; title.textContent = `${players[winnerId]} 获胜`; }
+      else { icon.textContent = '🤝'; title.textContent = '平局！'; }
+
+      const container = document.getElementById('resultScores');
+      container.innerHTML = '';
+      for (const [id, name] of Object.entries(players)) {
+        const score = id === myId ? myScore : opponentScore;
+        const pairs = id === myId ? myPairs : opponentPairs;
+        const div = document.createElement('div');
+        div.className = 'result-player' + (id === winnerId ? ' winner' : '');
+        div.innerHTML = `<div class="rp-name">${name}</div><div class="rp-score">${score}</div><div class="rp-pairs">${pairs} 对配对</div>`;
+        container.appendChild(div);
+      }
+    }
+
+    function backToLobby() {
+      if (channel) { supabaseClient.removeChannel(channel); channel = null; }
+      players = {}; gameActive = false;
+      showScreen('lobbyScreen');
+    }
+
+    /* ── Init ── */
+    (function prefillAuth() {
+      const remembered = localStorage.getItem('remembered_email');
+      if (remembered) document.getElementById('authEmail').value = remembered;
+    })();
+  </script>
+
+  <script>
+  (function() {
+    'use strict';
+    var canvas = document.getElementById('bgCanvas');
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+    var W = 0, H = 0, dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var CELL = 40;
+    var cols = 0, rows = 0;
+    var METEOR_COLORS = [
+      { r: 120, g: 130, b: 255 },
+      { r: 255, g: 180, b: 90 },
+      { r: 255, g: 120, b: 200 },
+      { r: 100, g: 255, b: 180 },
+      { r: 180, g: 140, b: 255 }
+    ];
+    function resize() {
+      W = window.innerWidth; H = window.innerHeight;
+      canvas.width = W * dpr; canvas.height = H * dpr;
+      canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      cols = Math.ceil(W / CELL) + 1; rows = Math.ceil(H / CELL) + 1;
+    }
+    function drawGrid() {
+      ctx.strokeStyle = 'rgba(110, 120, 200, 0.2)'; ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (var i = 0; i <= cols; i++) { var x = i * CELL; ctx.moveTo(x, 0); ctx.lineTo(x, H); }
+      for (var j = 0; j <= rows; j++) { var y = j * CELL; ctx.moveTo(0, y); ctx.lineTo(W, y); }
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(120, 130, 255, 0.3)';
+      for (var i2 = 0; i2 <= cols; i2++) for (var j2 = 0; j2 <= rows; j2++) ctx.fillRect(i2 * CELL - 0.5, j2 * CELL - 0.5, 1, 1);
+    }
+    function Meteor() {
+      this.horizontal = Math.random() > 0.5;
+      var c = METEOR_COLORS[Math.floor(Math.random() * METEOR_COLORS.length)];
+      this.r = c.r; this.g = c.g; this.b = c.b;
+      this.speed = 1.5 + Math.random() * 3;
+      this.tailLen = 100 + Math.random() * 180;
+      this.life = 0; this.maxLife = 200 + Math.random() * 300;
+      this.thickness = 1.5 + Math.random() * 1.5;
+      if (this.horizontal) {
+        this.row = Math.floor(Math.random() * rows);
+        this.y = this.row * CELL + CELL / 2;
+        this.reverse = Math.random() > 0.5;
+        this.x = this.reverse ? W + 50 : -50;
+        this.vx = this.reverse ? -this.speed : this.speed; this.vy = 0;
+      } else {
+        this.col = Math.floor(Math.random() * cols);
+        this.x = this.col * CELL + CELL / 2;
+        this.reverse = Math.random() > 0.5;
+        this.y = this.reverse ? H + 50 : -50;
+        this.vx = 0; this.vy = this.reverse ? -this.speed : this.speed;
+      }
+    }
+    Meteor.prototype.alpha = function() {
+      var fadeIn = 40, fadeOut = 80;
+      if (this.life < fadeIn) return this.life / fadeIn;
+      if (this.life > this.maxLife - fadeOut) return Math.max(0, (this.maxLife - this.life) / fadeOut);
+      return 1;
+    };
+    Meteor.prototype.update = function() {
+      this.life++; this.x += this.vx; this.y += this.vy;
+      if (this.horizontal) {
+        if (this.reverse && this.x < -this.tailLen) return false;
+        if (!this.reverse && this.x > W + this.tailLen) return false;
+      } else {
+        if (this.reverse && this.y < -this.tailLen) return false;
+        if (!this.reverse && this.y > H + this.tailLen) return false;
+      }
+      if (this.life > this.maxLife) return false;
+      return true;
+    };
+    Meteor.prototype.draw = function() {
+      var a = this.alpha(); if (a <= 0) return;
+      var c = this.r + ', ' + this.g + ', ' + this.b;
+      var tx = this.x - this.vx * (this.tailLen / this.speed);
+      var ty = this.y - this.vy * (this.tailLen / this.speed);
+      var grad = ctx.createLinearGradient(this.x, this.y, tx, ty);
+      grad.addColorStop(0, 'rgba(' + c + ', ' + (0.9 * a) + ')');
+      grad.addColorStop(0.3, 'rgba(' + c + ', ' + (0.4 * a) + ')');
+      grad.addColorStop(1, 'rgba(' + c + ', 0)');
+      ctx.strokeStyle = grad; ctx.lineWidth = this.thickness; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(this.x, this.y); ctx.lineTo(tx, ty); ctx.stroke();
+      ctx.shadowColor = 'rgba(' + c + ', ' + a + ')'; ctx.shadowBlur = 16;
+      ctx.fillStyle = 'rgba(' + c + ', ' + a + ')';
+      ctx.beginPath(); ctx.arc(this.x, this.y, this.thickness * 1.5, 0, Math.PI * 2); ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = 'rgba(255, 255, 255, ' + (0.7 * a) + ')';
+      ctx.beginPath(); ctx.arc(this.x, this.y, this.thickness * 0.6, 0, Math.PI * 2); ctx.fill();
+    };
+    var meteors = []; var MAX_METEORS = 60; var spawnCooldown = 0;
+    function spawnMeteor() { if (meteors.length < MAX_METEORS) meteors.push(new Meteor()); }
+    function loop() {
+      ctx.clearRect(0, 0, W, H); drawGrid();
+      meteors = meteors.filter(function(m) { var alive = m.update(); if (alive) m.draw(); return alive; });
+      if (spawnCooldown <= 0 && meteors.length < MAX_METEORS) { spawnMeteor(); spawnCooldown = 20 + Math.random() * 100; }
+      spawnCooldown--;
+      if (meteors.length === 0) { spawnMeteor(); spawnMeteor(); }
+      requestAnimationFrame(loop);
+    }
+    resize(); window.addEventListener('resize', resize);
+    for (var i = 0; i < 3; i++) spawnMeteor();
+    loop();
+  })();
+  </script>
+</body>
+</html>

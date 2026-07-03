@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>打地鼠对战 · Whack-a-Mole Arena</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Noto+Sans+SC:wght@300;400;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: oklch(18% 0.02 55);
+      --surface: oklch(25% 0.03 55);
+      --surface-high: oklch(32% 0.04 55);
+      --accent: oklch(65% 0.22 25);
+      --accent-hot: oklch(70% 0.28 15);
+      --green: oklch(55% 0.18 140);
+      --gold: oklch(75% 0.15 85);
+      --text: oklch(92% 0.01 55);
+      --text-muted: oklch(60% 0.02 55);
+      --danger: oklch(55% 0.22 25);
+      --radius: 16px;
+      --font-display: 'Dela Gothic One', sans-serif;
+      --font-body: 'Noto Sans SC', sans-serif;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: linear-gradient(135deg, oklch(18% 0.02 55) 0%, oklch(22% 0.03 50) 40%, oklch(14% 0.02 60) 100%);
+      color: var(--text);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      overflow-x: hidden;
+    }
+
+    #bgCanvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+
+    #app {
+      width: 1200px;
+      max-width: 100%;
+      min-height: 100vh;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ── Config Modal ── */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: oklch(12% 0.04 55 / 0.85);
+      backdrop-filter: blur(8px);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 100;
+    }
+    .modal-overlay.hidden { display: none; }
+
+    .modal-card {
+      background: var(--surface);
+      border: 1px solid oklch(40% 0.04 55);
+      border-radius: var(--radius);
+      padding: clamp(24px, 4vw, 40px);
+      width: min(480px, 90vw);
+      box-shadow: 0 24px 64px oklch(0% 0 0 / 0.5);
+    }
+    .modal-card h2 {
+      font-family: var(--font-display);
+      font-size: clamp(20px, 3vw, 28px);
+      margin-bottom: 8px;
+      color: var(--accent);
+    }
+    .modal-card p {
+      color: var(--text-muted);
+      font-size: 14px;
+      margin-bottom: 24px;
+      line-height: 1.6;
+    }
+    .field-group { margin-bottom: 16px; }
+    .field-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .field-group input {
+      width: 100%;
+      padding: 10px 14px;
+      background: var(--bg);
+      border: 1px solid oklch(40% 0.04 55);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .field-group input:focus {
+      border-color: var(--accent);
+    }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-family: var(--font-display);
+      font-size: 14px;
+      cursor: pointer;
+      border: none;
+      transition: transform 0.15s ease-out-quart, box-shadow 0.2s;
+      user-select: none;
+    }
+    .btn:active { transform: scale(0.95); }
+    .btn-primary {
+      background: var(--accent);
+      color: oklch(98% 0 0);
+      box-shadow: 0 4px 16px oklch(65% 0.22 25 / 0.3);
+    }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+
+    /* ── Auth Tabs & Status ── */
+    .auth-tabs {
+      display: flex;
+      gap: 4px;
+      background: var(--surface-high);
+      padding: 4px;
+      border-radius: 10px;
+      margin: 8px 0 16px;
+    }
+    .auth-tab {
+      flex: 1;
+      padding: 10px 12px;
+      border: none;
+      background: transparent;
+      color: var(--text-dim);
+      font-size: 14px;
+      font-weight: 600;
+      border-radius: 7px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .auth-tab.active {
+      background: var(--accent);
+      color: oklch(98% 0 0);
+      box-shadow: 0 2px 8px oklch(65% 0.22 25 / 0.25);
+    }
+    .auth-status {
+      margin: 12px 0 0;
+      min-height: 20px;
+      font-size: 13px;
+      text-align: center;
+      line-height: 1.4;
+    }
+    .auth-status.ok  { color: var(--green); }
+    .auth-status.err { color: var(--accent); }
+    .hint { color: var(--text-dim); font-size: 12px; font-weight: 400; }
+    #signupExtra.hidden { display: none; }
+    .btn-primary:hover { box-shadow: 0 6px 24px oklch(65% 0.22 25 / 0.4); }
+    .btn-secondary {
+      background: var(--surface-high);
+      color: var(--text);
+      border: 1px solid oklch(40% 0.04 55);
+    }
+
+    /* ── Lobby ── */
+    .screen { display: none; padding: clamp(16px, 3vw, 32px); }
+    .screen.active { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; }
+
+    .lobby-title {
+      font-family: var(--font-display);
+      font-size: clamp(36px, 6vw, 72px);
+      text-align: center;
+      color: var(--accent);
+      margin-bottom: 8px;
+      letter-spacing: -0.02em;
+    }
+    .lobby-subtitle {
+      font-size: clamp(14px, 2vw, 18px);
+      color: var(--text-muted);
+      text-align: center;
+      margin-bottom: clamp(32px, 5vw, 48px);
+      max-width: 400px;
+    }
+
+    .lobby-mole-emoji {
+      font-size: clamp(48px, 8vw, 80px);
+      margin-bottom: 16px;
+      filter: drop-shadow(0 4px 12px oklch(65% 0.22 25 / 0.4));
+    }
+
+    .lobby-form {
+      display: flex; flex-direction: column; gap: 16px;
+      width: min(360px, 90vw);
+    }
+
+    /* ── Waiting Room ── */
+    .waiting-card {
+      background: var(--surface);
+      border: 1px solid oklch(40% 0.04 55);
+      border-radius: var(--radius);
+      padding: clamp(24px, 4vw, 40px);
+      width: min(480px, 90vw);
+      text-align: center;
+    }
+    .waiting-card h2 {
+      font-family: var(--font-display);
+      font-size: clamp(18px, 3vw, 24px);
+      color: var(--gold);
+      margin-bottom: 16px;
+    }
+    .room-id {
+      font-family: var(--font-display);
+      font-size: clamp(28px, 4vw, 40px);
+      color: var(--accent);
+      background: var(--bg);
+      padding: 12px 24px;
+      border-radius: 10px;
+      margin: 12px 0 24px;
+      letter-spacing: 0.08em;
+      border: 2px dashed oklch(50% 0.06 55);
+    }
+    .player-list {
+      display: flex; gap: 12px; justify-content: center;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .player-badge {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--surface-high);
+      padding: 8px 16px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .player-badge .dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: pulse-dot 1.5s infinite;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    .waiting-hint {
+      color: var(--text-muted);
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+
+    /* ── Game Screen ── */
+    .game-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: clamp(12px, 2vw, 20px) clamp(16px, 3vw, 32px);
+      background: var(--surface);
+      border-bottom: 1px solid oklch(40% 0.04 55);
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .game-round {
+      font-family: var(--font-display);
+      font-size: clamp(14px, 2vw, 20px);
+      color: var(--gold);
+    }
+    .game-timer {
+      font-family: var(--font-display);
+      font-size: clamp(18px, 3vw, 28px);
+      color: var(--accent-hot);
+    }
+    .game-scores {
+      display: flex; gap: clamp(12px, 2vw, 24px);
+    }
+    .score-item {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--surface-high);
+      padding: 6px 14px;
+      border-radius: 8px;
+    }
+    .score-item .name {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+    .score-item .val {
+      font-family: var(--font-display);
+      font-size: clamp(16px, 2vw, 22px);
+      color: var(--gold);
+    }
+
+    .game-grid-wrap {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: clamp(16px, 3vw, 32px);
+    }
+
+    .game-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: clamp(12px, 2vw, 24px);
+      width: min(540px, 85vw);
+    }
+
+    .mole-hole {
+      aspect-ratio: 1;
+      background: var(--surface);
+      border-radius: 50%;
+      border: 3px solid oklch(35% 0.04 55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.12s ease-out-quart, background 0.15s;
+      position: relative;
+      overflow: hidden;
+      user-select: none;
+    }
+    .mole-hole::before {
+      content: '';
+      position: absolute;
+      inset: 8%;
+      border-radius: 50%;
+      background: oklch(14% 0.02 55);
+      transition: background 0.2s;
+    }
+    .mole-hole:active {
+      transform: scale(0.9);
+    }
+    .mole-hole.active::before {
+      background: oklch(55% 0.18 140);
+    }
+    .mole-hole.active {
+      border-color: var(--green);
+      animation: mole-pop 0.25s ease-out-quart;
+    }
+    .mole-hole.whacked::before {
+      background: var(--accent-hot);
+    }
+    .mole-hole.whacked {
+      animation: mole-whack 0.3s ease-out-quart;
+      border-color: var(--accent);
+    }
+
+    .mole-face {
+      position: absolute;
+      font-size: clamp(24px, 4vw, 40px);
+      z-index: 2;
+      opacity: 0;
+      transform: translateY(100%);
+      transition: opacity 0.2s, transform 0.2s ease-out-quart;
+    }
+    .mole-hole.active .mole-face {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .mole-hole.whacked .mole-face {
+      opacity: 0;
+      transform: translateY(100%) scale(0.5);
+    }
+
+    @keyframes mole-pop {
+      0% { transform: scale(0.85); }
+      100% { transform: scale(1); }
+    }
+    @keyframes mole-whack {
+      0% { transform: scale(1.15); }
+      50% { transform: scale(0.8); }
+      100% { transform: scale(1); }
+    }
+
+    /* ── Result Screen ── */
+    .result-card {
+      background: var(--surface);
+      border: 1px solid oklch(40% 0.04 55);
+      border-radius: var(--radius);
+      padding: clamp(32px, 5vw, 48px);
+      width: min(520px, 90vw);
+      text-align: center;
+    }
+    .result-crown {
+      font-size: 64px;
+      margin-bottom: 12px;
+    }
+    .result-title {
+      font-family: var(--font-display);
+      font-size: clamp(28px, 4vw, 40px);
+      color: var(--gold);
+      margin-bottom: 24px;
+    }
+    .result-scores {
+      display: flex; gap: 24px; justify-content: center;
+      margin-bottom: 32px;
+      flex-wrap: wrap;
+    }
+    .result-player {
+      background: var(--surface-high);
+      padding: 16px 24px;
+      border-radius: 12px;
+      min-width: 160px;
+    }
+    .result-player.winner {
+      border: 2px solid var(--gold);
+      box-shadow: 0 8px 32px oklch(75% 0.15 85 / 0.2);
+    }
+    .result-player .rp-name {
+      font-weight: 700;
+      font-size: 16px;
+      margin-bottom: 8px;
+    }
+    .result-player .rp-score {
+      font-family: var(--font-display);
+      font-size: clamp(24px, 4vw, 36px);
+      color: var(--gold);
+    }
+
+    /* ── Connection Status ── */
+    .conn-bar {
+      position: fixed; top: 0; left: 0; right: 0;
+      padding: 8px 16px;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 700;
+      z-index: 50;
+      transition: transform 0.3s, opacity 0.3s;
+    }
+    .conn-bar.ok { background: var(--green); color: oklch(98% 0 0); }
+    .conn-bar.err { background: var(--danger); color: oklch(98% 0 0); }
+    .conn-bar.hidden { transform: translateY(-100%); opacity: 0; }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .game-header { justify-content: center; text-align: center; }
+      .game-grid { width: min(360px, 80vw); }
+      .lobby-title { font-size: clamp(28px, 5vw, 48px); }
+    }
+    @media (pointer: coarse) {
+      .mole-hole { border-width: 4px; }
+      .btn { padding: 14px 28px; }
+    }
+
+    /* ── Animations ── */
+    .fade-in {
+      animation: fadeIn 0.4s ease-out-quart;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .sparkle {
+      position: absolute;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--gold);
+      animation: sparkle-fly 0.6s ease-out-quart forwards;
+      pointer-events: none;
+    }
+    @keyframes sparkle-fly {
+      0% { opacity: 1; transform: translate(0, 0) scale(1); }
+      100% { opacity: 0; transform: translate(var(--sx), var(--sy)) scale(0); }
+    }
+
+    .countdown-overlay {
+      position: fixed; inset: 0;
+      background: oklch(12% 0.04 55 / 0.7);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 80;
+      font-family: var(--font-display);
+      font-size: clamp(64px, 12vw, 120px);
+      color: var(--accent);
+      animation: countPulse 0.6s ease-out-quart;
+    }
+    @keyframes countPulse {
+      0% { transform: scale(2); opacity: 0; }
+      50% { transform: scale(1.1); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="bgCanvas"></canvas>
+  <div id="app">
+    <!-- Connection Status Bar -->
+    <div id="connBar" class="conn-bar hidden"></div>
+
+    <!-- Auth Modal -->
+    <div id="configModal" class="modal-overlay">
+      <div class="modal-card fade-in">
+        <h2>🎮 账户登录</h2>
+        <p>使用你在 Supabase 项目下注册的账户登录。仅 <strong>status = approved</strong> 的账户可进入对战。</p>
+        <div class="auth-tabs">
+          <button id="tabLogin" class="auth-tab active" onclick="switchAuthTab('login')">登录</button>
+          <button id="tabSignup" class="auth-tab" onclick="switchAuthTab('signup')">注册</button>
+        </div>
+        <div class="field-group">
+          <label>邮箱</label>
+          <input id="authEmail" type="email" placeholder="you@example.com" autocomplete="email">
+        </div>
+        <div class="field-group">
+          <label>密码 <span class="hint">(至少 6 位)</span></label>
+          <input id="authPassword" type="password" placeholder="••••••••" autocomplete="current-password">
+        </div>
+        <div id="signupExtra" class="hidden">
+          <div class="field-group">
+            <label>昵称</label>
+            <input id="authUsername" type="text" placeholder="昵称 (用于房间内显示)" maxlength="12">
+          </div>
+        </div>
+        <button id="authSubmitBtn" class="btn btn-primary" onclick="handleAuth()">登录</button>
+        <p class="auth-status" id="authStatus"></p>
+      </div>
+    </div>
+
+    <!-- Lobby Screen -->
+    <div id="lobbyScreen" class="screen">
+      <div class="lobby-mole-emoji">🐹</div>
+      <h1 class="lobby-title">打地鼠对战</h1>
+      <p class="lobby-subtitle">两位玩家实时竞速，谁的手速更快？</p>
+      <div class="lobby-form">
+        <div class="field-group">
+          <label>你的昵称</label>
+          <input id="playerName" type="text" placeholder="玩家昵称" maxlength="12">
+        </div>
+        <button class="btn btn-primary" onclick="createRoom()">创建房间</button>
+        <div class="field-group">
+          <label>加入已有房间</label>
+          <input id="joinRoomId" type="text" placeholder="输入房间号" maxlength="6">
+        </div>
+        <button class="btn btn-secondary" onclick="joinRoom()">加入对战</button>
+      </div>
+    </div>
+
+    <!-- Waiting Room -->
+    <div id="waitingScreen" class="screen">
+      <div class="waiting-card fade-in">
+        <h2>等待对手加入</h2>
+        <div class="room-id" id="roomIdDisplay">------</div>
+        <p class="waiting-hint">将房间号分享给朋友，等待对方加入...</p>
+        <div class="player-list" id="playerList"></div>
+      </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="gameScreen" class="screen" style="display: none;">
+      <div class="game-header">
+        <div class="game-round" id="roundDisplay">第 1 轮</div>
+        <div class="game-timer" id="timerDisplay">30</div>
+        <div class="game-scores" id="scoresDisplay"></div>
+      </div>
+      <div class="game-grid-wrap">
+        <div class="game-grid" id="moleGrid"></div>
+      </div>
+    </div>
+
+    <!-- Result Screen -->
+    <div id="resultScreen" class="screen">
+      <div class="result-card fade-in">
+        <div class="result-crown">🏆</div>
+        <div class="result-title" id="resultTitle">对战结束</div>
+        <div class="result-scores" id="resultScores"></div>
+        <button class="btn btn-primary" onclick="backToLobby()">再来一局</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ── State ── */
+    let channel = null;
+    let myId = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2);
+    let myName = '';
+    let roomId = '';
+    let players = {};
+    let myScore = 0;
+    let opponentScore = 0;
+    let round = 0;
+    let maxRounds = 10;
+    let roundTime = 30;
+    let timerInterval = null;
+    let moleTimers = [];
+    let activeMoles = new Set();
+    let gameActive = false;
+
+    /* ── Auth ── */
+    let authMode = 'login';  // 'login' | 'signup'
+    let currentProfile = null; // { id, username, display_name, status, role }
+
+    function switchAuthTab(mode) {
+      authMode = mode;
+      const isLogin = mode === 'login';
+      document.getElementById('tabLogin').classList.toggle('active', isLogin);
+      document.getElementById('tabSignup').classList.toggle('active', !isLogin);
+      document.getElementById('signupExtra').classList.toggle('hidden', isLogin);
+      document.getElementById('authSubmitBtn').textContent = isLogin ? '登录' : '注册并申请审核';
+      document.getElementById('authPassword').autocomplete = isLogin ? 'current-password' : 'new-password';
+      document.getElementById('authStatus').textContent = '';
+      document.getElementById('authStatus').className = 'auth-status';
+    }
+
+    function setAuthStatus(msg, isErr) {
+      const el = document.getElementById('authStatus');
+      el.textContent = msg;
+      el.className = 'auth-status' + (isErr ? ' err' : ' ok');
+    }
+
+    // ================================================================
+    //  🔧 配置区域 — 请替换为你自己的 Supabase 项目信息
+    // ================================================================
+    const SUPABASE_URL = 'https://zsyswamtmhqitsqbolut.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_lkwHgCi9HYVKgHxVTw_7UQ_U5PRng_W';
+
+    if (SUPABASE_URL.includes('YOUR_PROJECT') || SUPABASE_ANON_KEY.includes('YOUR_ANON_KEY')) {
+      alert('⚠️ 请先在代码顶部配置 SUPABASE_URL 和 SUPABASE_ANON_KEY');
+    }
+
+    // ================================================================
+    //  初始化 Supabase
+    // ================================================================
+    if (typeof supabase === 'undefined' || !supabase.createClient) {
+      console.error('Supabase SDK not loaded');
+      document.addEventListener('DOMContentLoaded', () => {
+        setAuthStatus('Supabase SDK 加载失败，请检查网络后刷新', true);
+      });
+    }
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { storage: sessionStorage }
+    });
+
+    async function handleAuth() {
+      const email = document.getElementById('authEmail').value.trim();
+      const password = document.getElementById('authPassword').value;
+      const username = document.getElementById('authUsername').value.trim();
+      if (!email || !password) { setAuthStatus('请填写邮箱和密码', true); return; }
+      if (password.length < 6) { setAuthStatus('密码至少 6 位', true); return; }
+      if (authMode === 'signup' && !username) { setAuthStatus('请填写昵称', true); return; }
+
+      // supabaseClient 已在脚本顶部初始化完成，直接使用
+
+      const btn = document.getElementById('authSubmitBtn');
+      btn.disabled = true;
+      const origText = btn.textContent;
+      btn.textContent = authMode === 'login' ? '登录中…' : '注册中…';
+
+      try {
+        if (authMode === 'signup') {
+          const { data, error } = await supabaseClient.auth.signUp({
+            email, password,
+            options: { data: { username, display_name: username } }
+          });
+          if (error) throw error;
+          if (!data.session) {
+            setAuthStatus('注册成功！请去邮箱点击确认链接后再登录（可在 Supabase 控制台关闭 Email Confirm）', false);
+            switchAuthTab('login');
+            return;
+          }
+        } else {
+          const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+          if (error) throw error;
+        }
+
+        // 已登录，查询 profile 状态
+        const profile = await fetchMyProfile();
+        if (!profile) {
+          setAuthStatus('登录成功但未找到 profile 记录，请联系管理员', true);
+          await supabaseClient.auth.signOut();
+          return;
+        }
+        if (profile.status !== 'approved') {
+          const label = { pending: '待审核', rejected: '已拒绝', banned: '已封禁' }[profile.status] || profile.status;
+          setAuthStatus(`账户当前状态：${label}，无法进入游戏`, true);
+          await supabaseClient.auth.signOut();
+          return;
+        }
+        // 通过！进入大厅
+        currentProfile = profile;
+        try { localStorage.setItem('remembered_email', email); } catch(e) {}
+        document.getElementById('configModal').classList.add('hidden');
+        showScreen('lobbyScreen');
+        showConn(`✓ 欢迎，${profile.display_name || profile.username}`, false);
+        setTimeout(() => hideConn(), 2500);
+      } catch (e) {
+        setAuthStatus((authMode === 'login' ? '登录失败: ' : '注册失败: ') + (e.message || e), true);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = origText;
+      }
+    }
+
+    async function fetchMyProfile() {
+      const { data: { user }, error: uErr } = await supabaseClient.auth.getUser();
+      if (uErr || !user) return null;
+      const { data, error } = await supabaseClient
+        .from('profiles')
+        .select('id, username, display_name, status, role')
+        .eq('id', user.id)
+        .single();
+      if (error) return null;
+      return data;
+    }
+
+    async function signOut() {
+      if (supabaseClient) await supabaseClient.auth.signOut();
+      currentProfile = null;
+      showScreen('configModal');
+    }
+
+    /* ── Connection Bar ── */
+    function showConn(msg, isErr) {
+      const bar = document.getElementById('connBar');
+      bar.textContent = msg;
+      bar.className = isErr ? 'conn-bar err' : 'conn-bar ok';
+    }
+    function hideConn() {
+      document.getElementById('connBar').classList.add('hidden');
+    }
+
+    /* ── Screen Switch ── */
+    function showScreen(id) {
+      document.querySelectorAll('.screen').forEach(s => {
+        s.classList.remove('active');
+        s.style.display = 'none';
+      });
+      const el = document.getElementById(id);
+      el.classList.add('active');
+      el.style.display = 'flex';
+    }
+
+    /* ── Room Management ── */
+    function generateRoomId() {
+      return Math.random().toString(36).slice(2, 8).toUpperCase();
+    }
+
+    function createRoom() {
+      myName = document.getElementById('playerName').value.trim() || '玩家' + Math.floor(Math.random() * 999);
+      roomId = generateRoomId();
+      setupChannel();
+      showScreen('waitingScreen');
+      document.getElementById('roomIdDisplay').textContent = roomId;
+      updatePlayerList();
+    }
+
+    function joinRoom() {
+      myName = document.getElementById('playerName').value.trim() || '玩家' + Math.floor(Math.random() * 999);
+      roomId = document.getElementById('joinRoomId').value.trim().toUpperCase();
+      if (!roomId || roomId.length < 4) {
+        showConn('请输入有效的房间号', true);
+        setTimeout(() => hideConn(), 3000);
+        return;
+      }
+      setupChannel();
+      showScreen('waitingScreen');
+      document.getElementById('roomIdDisplay').textContent = roomId;
+    }
+
+    function setupChannel() {
+      if (channel) { supabaseClient.removeChannel(channel); }
+      channel = supabaseClient.channel(`game:${roomId}`, {
+        config: { broadcast: { self: true }, presence: { key: myId } }
+      });
+
+      channel.on('presence', { event: 'sync' }, () => {
+        players = {};
+        const state = channel.presenceState();
+        for (const [key, presences] of Object.entries(state)) {
+          for (const p of presences) {
+            players[p.id] = p.name;
+          }
+        }
+        updatePlayerList();
+        const count = Object.keys(players).length;
+        if (count === 2 && !gameActive) {
+          setTimeout(() => startGame(), 1500);
+        }
+      });
+
+      channel.on('broadcast', { event: 'mole_appear' }, (payload) => {
+        const { index, duration } = payload.payload;
+        showMole(index, duration, false);
+      });
+
+      channel.on('broadcast', { event: 'mole_whack' }, (payload) => {
+        const { index, playerId } = payload.payload;
+        whackMole(index, playerId);
+      });
+
+      channel.on('broadcast', { event: 'game_start' }, () => {
+        if (!gameActive) beginRound();
+      });
+
+      channel.on('broadcast', { event: 'round_end' }, (payload) => {
+        const { roundNum, scores } = payload.payload;
+        handleRoundEnd(roundNum, scores);
+      });
+
+      channel.subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await channel.track({ id: myId, name: myName });
+        }
+      });
+    }
+
+    function updatePlayerList() {
+      const list = document.getElementById('playerList');
+      list.innerHTML = '';
+      for (const [id, name] of Object.entries(players)) {
+        const badge = document.createElement('div');
+        badge.className = 'player-badge';
+        badge.innerHTML = `<span class="dot"></span>${name}`;
+        list.appendChild(badge);
+      }
+    }
+
+    /* ── Game Logic ── */
+    function startGame() {
+      gameActive = true;
+      myScore = 0;
+      opponentScore = 0;
+      round = 0;
+      channel.send({ type: 'broadcast', event: 'game_start', payload: {} });
+      beginRound();
+    }
+
+    function beginRound() {
+      round++;
+      if (round > maxRounds) {
+        endGame();
+        return;
+      }
+      document.getElementById('roundDisplay').textContent = `第 ${round} 轮`;
+      updateScoresUI();
+      buildGrid();
+      startTimer();
+      spawnMoles();
+    }
+
+    function buildGrid() {
+      const grid = document.getElementById('moleGrid');
+      grid.innerHTML = '';
+      for (let i = 0; i < 9; i++) {
+        const hole = document.createElement('div');
+        hole.className = 'mole-hole';
+        hole.dataset.index = i;
+        hole.innerHTML = `<span class="mole-face">🐹</span>`;
+        hole.addEventListener('pointerdown', () => onMoleTap(i));
+        grid.appendChild(hole);
+      }
+      activeMoles.clear();
+    }
+
+    function startTimer() {
+      let timeLeft = roundTime;
+      document.getElementById('timerDisplay').textContent = timeLeft;
+      clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        document.getElementById('timerDisplay').textContent = timeLeft;
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          roundEnd();
+        }
+      }, 1000);
+    }
+
+    function spawnMoles() {
+      moleTimers.forEach(t => clearTimeout(t));
+      moleTimers = [];
+
+      // Host generates mole spawns and broadcasts
+      const myIdFirst = Object.keys(players)[0];
+      if (myIdFirst === myId) {
+        const moleCount = Math.min(2 + Math.floor(round / 3), 6);
+        const interval = Math.max(800, 2000 - round * 100);
+
+        for (let i = 0; i < moleCount; round++) {
+          // This would schedule moles throughout the round
+        }
+
+        // Schedule random mole appearances throughout the round
+        const scheduleMole = () => {
+          if (!gameActive) return;
+          const index = Math.floor(Math.random() * 9);
+          const duration = Math.max(1500, 3000 - round * 150);
+          channel.send({
+            type: 'broadcast',
+            event: 'mole_appear',
+            payload: { index, duration }
+          });
+          const nextDelay = Math.max(600, 1500 - round * 80) + Math.random() * 800;
+          moleTimers.push(setTimeout(scheduleMole, nextDelay));
+        };
+
+        // Start spawning after a short delay
+        for (let d = 800; d < roundTime * 1000; d += Math.max(600, 1500 - round * 80)) {
+          const jitter = Math.random() * 600;
+          moleTimers.push(setTimeout(() => {
+            if (!gameActive) return;
+            const index = Math.floor(Math.random() * 9);
+            const duration = Math.max(1200, 2800 - round * 120);
+            channel.send({
+              type: 'broadcast',
+              event: 'mole_appear',
+              payload: { index, duration }
+            });
+          }, d + jitter));
+        }
+      }
+    }
+
+    function showMole(index, duration, isLocal) {
+      if (activeMoles.has(index)) return;
+      activeMoles.add(index);
+      const hole = document.querySelector(`.mole-hole[data-index="${index}"]`);
+      if (!hole) return;
+      hole.classList.add('active');
+      hole.classList.remove('whacked');
+
+      setTimeout(() => {
+        if (activeMoles.has(index)) {
+          hole.classList.remove('active');
+          activeMoles.delete(index);
+        }
+      }, duration);
+    }
+
+    function onMoleTap(index) {
+      if (!activeMoles.has(index) || !gameActive) return;
+      channel.send({
+        type: 'broadcast',
+        event: 'mole_whack',
+        payload: { index, playerId: myId }
+      });
+      // Local immediate feedback
+      localWhack(index, myId);
+    }
+
+    function whackMole(index, playerId) {
+      if (!activeMoles.has(index)) return;
+      localWhack(index, playerId);
+    }
+
+    function localWhack(index, playerId) {
+      activeMoles.delete(index);
+      const hole = document.querySelector(`.mole-hole[data-index="${index}"]`);
+      if (!hole) return;
+      hole.classList.add('whacked');
+      hole.classList.remove('active');
+
+      // Spawn sparkles
+      for (let i = 0; i < 6; i++) {
+        const spark = document.createElement('div');
+        spark.className = 'sparkle';
+        spark.style.cssText = `
+          left: 50%; top: 50%;
+          --sx: ${(Math.random() - 0.5) * 80}px;
+          --sy: ${(Math.random() - 0.5) * 80}px;
+        `;
+        hole.appendChild(spark);
+        setTimeout(() => spark.remove(), 600);
+      }
+
+      // Score
+      if (playerId === myId) {
+        myScore += 10;
+      } else {
+        opponentScore += 10;
+      }
+      updateScoresUI();
+
+      setTimeout(() => {
+        hole.classList.remove('whacked');
+      }, 300);
+    }
+
+    function updateScoresUI() {
+      const container = document.getElementById('scoresDisplay');
+      container.innerHTML = '';
+      for (const [id, name] of Object.entries(players)) {
+        const score = id === myId ? myScore : opponentScore;
+        const item = document.createElement('div');
+        item.className = 'score-item';
+        item.innerHTML = `<span class="name">${name}</span><span class="val">${score}</span>`;
+        container.appendChild(item);
+      }
+    }
+
+    function roundEnd() {
+      gameActive = false;
+      moleTimers.forEach(t => clearTimeout(t));
+      clearInterval(timerInterval);
+
+      const scores = {};
+      for (const [id, name] of Object.entries(players)) {
+        scores[id] = id === myId ? myScore : opponentScore;
+      }
+      channel.send({
+        type: 'broadcast',
+        event: 'round_end',
+        payload: { roundNum: round, scores }
+      });
+      handleRoundEnd(round, scores);
+    }
+
+    function handleRoundEnd(roundNum, scores) {
+      // After brief pause, start next round or end game
+      if (roundNum >= maxRounds) {
+        endGame();
+        return;
+      }
+      // Show countdown
+      gameActive = false;
+      showCountdown(3, () => {
+        gameActive = true;
+        beginRound();
+      });
+    }
+
+    function showCountdown(n, cb) {
+      const overlay = document.createElement('div');
+      overlay.className = 'countdown-overlay';
+      overlay.textContent = n;
+      document.body.appendChild(overlay);
+      let count = n;
+      const iv = setInterval(() => {
+        count--;
+        if (count <= 0) {
+          clearInterval(iv);
+          overlay.remove();
+          cb();
+        } else {
+          overlay.textContent = count;
+          overlay.style.animation = 'none';
+          requestAnimationFrame(() => overlay.style.animation = 'countPulse 0.6s ease-out-quart');
+        }
+      }, 800);
+    }
+
+    function endGame() {
+      gameActive = false;
+      moleTimers.forEach(t => clearTimeout(t));
+      clearInterval(timerInterval);
+
+      const winnerId = myScore > opponentScore ? myId :
+                       opponentScore > myScore ? Object.keys(players).find(id => id !== myId) : null;
+
+      showScreen('resultScreen');
+      const title = document.getElementById('resultTitle');
+      if (winnerId === myId) {
+        title.textContent = '你赢了！';
+      } else if (winnerId) {
+        title.textContent = `${players[winnerId]} 获胜`;
+      } else {
+        title.textContent = '平局！';
+      }
+
+      const container = document.getElementById('resultScores');
+      container.innerHTML = '';
+      for (const [id, name] of Object.entries(players)) {
+        const score = id === myId ? myScore : opponentScore;
+        const div = document.createElement('div');
+        div.className = 'result-player' + (id === winnerId ? ' winner' : '');
+        div.innerHTML = `<div class="rp-name">${name}</div><div class="rp-score">${score}</div>`;
+        container.appendChild(div);
+      }
+    }
+
+    function backToLobby() {
+      if (channel) {
+        supabaseClient.removeChannel(channel);
+        channel = null;
+      }
+      players = {};
+      gameActive = false;
+      showScreen('lobbyScreen');
+    }
+
+    /* ── Init ── */
+    // Pre-fill remembered email from localStorage
+    (function prefillAuth() {
+      const remembered = localStorage.getItem('remembered_email');
+      if (remembered) document.getElementById('authEmail').value = remembered;
+    })();
+  </script>
+
+  <script>
+  (function() {
+    'use strict';
+    var canvas = document.getElementById('bgCanvas');
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+    var W = 0, H = 0, dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var CELL = 40;
+    var cols = 0, rows = 0;
+    var METEOR_COLORS = [
+      { r: 120, g: 130, b: 255 },
+      { r: 255, g: 180, b: 90 },
+      { r: 255, g: 120, b: 200 },
+      { r: 100, g: 255, b: 180 },
+      { r: 180, g: 140, b: 255 }
+    ];
+    function resize() {
+      W = window.innerWidth; H = window.innerHeight;
+      canvas.width = W * dpr; canvas.height = H * dpr;
+      canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      cols = Math.ceil(W / CELL) + 1; rows = Math.ceil(H / CELL) + 1;
+    }
+    function drawGrid() {
+      ctx.strokeStyle = 'rgba(110, 120, 200, 0.2)'; ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (var i = 0; i <= cols; i++) { var x = i * CELL; ctx.moveTo(x, 0); ctx.lineTo(x, H); }
+      for (var j = 0; j <= rows; j++) { var y = j * CELL; ctx.moveTo(0, y); ctx.lineTo(W, y); }
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(120, 130, 255, 0.3)';
+      for (var i2 = 0; i2 <= cols; i2++) for (var j2 = 0; j2 <= rows; j2++) ctx.fillRect(i2 * CELL - 0.5, j2 * CELL - 0.5, 1, 1);
+    }
+    function Meteor() {
+      this.horizontal = Math.random() > 0.5;
+      var c = METEOR_COLORS[Math.floor(Math.random() * METEOR_COLORS.length)];
+      this.r = c.r; this.g = c.g; this.b = c.b;
+      this.speed = 1.5 + Math.random() * 3;
+      this.tailLen = 100 + Math.random() * 180;
+      this.life = 0; this.maxLife = 200 + Math.random() * 300;
+      this.thickness = 1.5 + Math.random() * 1.5;
+      if (this.horizontal) {
+        this.row = Math.floor(Math.random() * rows);
+        this.y = this.row * CELL + CELL / 2;
+        this.reverse = Math.random() > 0.5;
+        this.x = this.reverse ? W + 50 : -50;
+        this.vx = this.reverse ? -this.speed : this.speed; this.vy = 0;
+      } else {
+        this.col = Math.floor(Math.random() * cols);
+        this.x = this.col * CELL + CELL / 2;
+        this.reverse = Math.random() > 0.5;
+        this.y = this.reverse ? H + 50 : -50;
+        this.vx = 0; this.vy = this.reverse ? -this.speed : this.speed;
+      }
+    }
+    Meteor.prototype.alpha = function() {
+      var fadeIn = 40, fadeOut = 80;
+      if (this.life < fadeIn) return this.life / fadeIn;
+      if (this.life > this.maxLife - fadeOut) return Math.max(0, (this.maxLife - this.life) / fadeOut);
+      return 1;
+    };
+    Meteor.prototype.update = function() {
+      this.life++; this.x += this.vx; this.y += this.vy;
+      if (this.horizontal) {
+        if (this.reverse && this.x < -this.tailLen) return false;
+        if (!this.reverse && this.x > W + this.tailLen) return false;
+      } else {
+        if (this.reverse && this.y < -this.tailLen) return false;
+        if (!this.reverse && this.y > H + this.tailLen) return false;
+      }
+      if (this.life > this.maxLife) return false;
+      return true;
+    };
+    Meteor.prototype.draw = function() {
+      var a = this.alpha(); if (a <= 0) return;
+      var c = this.r + ', ' + this.g + ', ' + this.b;
+      var tx = this.x - this.vx * (this.tailLen / this.speed);
+      var ty = this.y - this.vy * (this.tailLen / this.speed);
+      var grad = ctx.createLinearGradient(this.x, this.y, tx, ty);
+      grad.addColorStop(0, 'rgba(' + c + ', ' + (0.9 * a) + ')');
+      grad.addColorStop(0.3, 'rgba(' + c + ', ' + (0.4 * a) + ')');
+      grad.addColorStop(1, 'rgba(' + c + ', 0)');
+      ctx.strokeStyle = grad; ctx.lineWidth = this.thickness; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(this.x, this.y); ctx.lineTo(tx, ty); ctx.stroke();
+      ctx.shadowColor = 'rgba(' + c + ', ' + a + ')'; ctx.shadowBlur = 16;
+      ctx.fillStyle = 'rgba(' + c + ', ' + a + ')';
+      ctx.beginPath(); ctx.arc(this.x, this.y, this.thickness * 1.5, 0, Math.PI * 2); ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = 'rgba(255, 255, 255, ' + (0.7 * a) + ')';
+      ctx.beginPath(); ctx.arc(this.x, this.y, this.thickness * 0.6, 0, Math.PI * 2); ctx.fill();
+    };
+    var meteors = []; var MAX_METEORS = 60; var spawnCooldown = 0;
+    function spawnMeteor() { if (meteors.length < MAX_METEORS) meteors.push(new Meteor()); }
+    function loop() {
+      ctx.clearRect(0, 0, W, H); drawGrid();
+      meteors = meteors.filter(function(m) { var alive = m.update(); if (alive) m.draw(); return alive; });
+      if (spawnCooldown <= 0 && meteors.length < MAX_METEORS) { spawnMeteor(); spawnCooldown = 20 + Math.random() * 100; }
+      spawnCooldown--;
+      if (meteors.length === 0) { spawnMeteor(); spawnMeteor(); }
+      requestAnimationFrame(loop);
+    }
+    resize(); window.addEventListener('resize', resize);
+    for (var i = 0; i < 3; i++) spawnMeteor();
+    loop();
+  })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>节拍同步 · Rhythm Sync</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&family=Noto+Sans+SC:wght@300;400;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: oklch(12% 0.02 30);
+      --surface: oklch(18% 0.03 30);
+      --surface-high: oklch(24% 0.04 30);
+      --accent: oklch(70% 0.18 50);
+      --accent-warm: oklch(72% 0.16 40);
+      --text: oklch(94% 0.02 30);
+      --text-muted: oklch(50% 0.03 30);
+      --green: oklch(62% 0.18 150);
+      --danger: oklch(55% 0.22 20);
+      --gold: oklch(72% 0.16 85);
+      --radius: 16px;
+      --font-display: 'Outfit', sans-serif;
+      --font-body: 'Noto Sans SC', sans-serif;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: linear-gradient(135deg, oklch(12% 0.02 30) 0%, oklch(16% 0.03 25) 40%, oklch(8% 0.02 35) 100%);
+      color: var(--text);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      overflow-x: hidden;
+    }
+
+    #bgCanvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+
+    #app { width: 1200px; max-width: 100%; min-height: 100vh; position: relative; z-index: 1; }
+
+    /* ── Modal ── */
+    .modal-overlay { position: fixed; inset: 0; background: oklch(8% 0.02 30 / 0.85); backdrop-filter: blur(12px); display: flex; align-items: center; justify-content: center; z-index: 100; }
+    .modal-overlay.hidden { display: none; }
+    .modal-card { background: var(--surface); border: 1px solid oklch(40% 0.04 30); border-radius: var(--radius); padding: clamp(24px, 4vw, 40px); width: min(480px, 90vw); box-shadow: 0 32px 80px oklch(0% 0 0 / 0.5); }
+    .modal-card h2 { font-family: var(--font-display); font-size: clamp(20px, 3vw, 28px); margin-bottom: 8px; color: var(--accent-warm); }
+    .modal-card p { color: var(--text-muted); font-size: 14px; margin-bottom: 24px; line-height: 1.6; }
+    .field-group { margin-bottom: 16px; }
+    .field-group label { display: block; font-size: 13px; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; }
+    .field-group input { width: 100%; padding: 10px 14px; background: var(--bg); border: 1px solid oklch(40% 0.04 30); border-radius: 10px; color: var(--text); font-family: var(--font-body); font-size: 14px; outline: none; transition: border-color 0.2s; }
+    .field-group input:focus { border-color: var(--accent-warm); }
+    .btn { display: inline-flex; align-items: center; justify-content: center; padding: 12px 24px; border-radius: 10px; font-family: var(--font-display); font-size: 14px; cursor: pointer; border: none; transition: transform 0.15s ease-out-quart; user-select: none; }
+    .btn:active { transform: scale(0.95); }
+    .btn-primary { background: var(--accent-warm); color: oklch(10% 0.02 30); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+
+    .auth-tabs { display: flex; gap: 4px; background: var(--surface-high); padding: 4px; border-radius: 10px; margin: 8px 0 16px; }
+    .auth-tab { flex: 1; padding: 10px 12px; border: none; background: transparent; color: var(--text-dim); font-size: 14px; font-weight: 600; border-radius: 7px; cursor: pointer; transition: all 0.2s; }
+    .auth-tab.active { background: var(--accent-warm); color: oklch(10% 0.02 30); box-shadow: 0 2px 8px oklch(75% 0.16 50 / 0.3); }
+    .auth-status { margin: 12px 0 0; min-height: 20px; font-size: 13px; text-align: center; line-height: 1.4; }
+    .auth-status.ok  { color: var(--green); }
+    .auth-status.err { color: var(--accent); }
+    .hint { color: var(--text-dim); font-size: 12px; font-weight: 400; }
+    #signupExtra.hidden { display: none; }
+    .btn-secondary { background: var(--surface-high); color: var(--text); border: 1px solid oklch(40% 0.04 30); }
+
+    /* ── Screen ── */
+    .screen { display: none; padding: clamp(16px, 3vw, 32px); position: relative; z-index: 1; }
+    .screen.active { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; }
+
+    /* ── Lobby ── */
+    .lobby-icon { font-size: clamp(56px, 8vw, 96px); margin-bottom: 16px; animation: pulse-glow 2s ease-in-out infinite; }
+    @keyframes pulse-glow {
+      0%, 100% { filter: drop-shadow(0 4px 12px oklch(70% 0.18 50 / 0.3)); }
+      50% { filter: drop-shadow(0 8px 24px oklch(70% 0.18 50 / 0.6)); }
+    }
+    .lobby-title { font-family: var(--font-display); font-size: clamp(36px, 7vw, 72px); text-align: center; color: var(--accent-warm); margin-bottom: 4px; letter-spacing: -0.02em; }
+    .lobby-subtitle { font-size: clamp(14px, 2vw, 18px); color: var(--text-muted); text-align: center; margin-bottom: clamp(32px, 5vw, 48px); }
+    .lobby-form { display: flex; flex-direction: column; gap: 16px; width: min(360px, 90vw); }
+
+    /* ── Waiting ── */
+    .waiting-card { background: var(--surface); border: 1px solid oklch(40% 0.04 30); border-radius: var(--radius); padding: clamp(24px, 4vw, 40px); width: min(480px, 90vw); text-align: center; }
+    .waiting-card h2 { font-family: var(--font-display); font-size: clamp(18px, 3vw, 24px); color: var(--accent-warm); margin-bottom: 16px; }
+    .room-id { font-family: var(--font-display); font-size: clamp(28px, 4vw, 40px); color: var(--accent-warm); background: var(--bg); padding: 12px 24px; border-radius: 10px; margin: 12px 0 24px; letter-spacing: 0.08em; border: 2px dashed oklch(50% 0.06 50); }
+    .player-list { display: flex; gap: 12px; justify-content: center; margin-bottom: 24px; flex-wrap: wrap; }
+    .player-badge { display: flex; align-items: center; gap: 8px; background: var(--surface-high); padding: 8px 16px; border-radius: 10px; font-size: 14px; font-weight: 700; }
+    .player-badge .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--green); animation: pulse-dot 1.5s infinite; }
+    @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+    .waiting-hint { color: var(--text-muted); font-size: 14px; }
+
+    /* ── Game ── */
+    .game-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: clamp(10px, 2vw, 16px) clamp(16px, 3vw, 24px);
+      background: var(--surface);
+      border-bottom: 1px solid oklch(35% 0.04 30);
+      flex-wrap: wrap; gap: 12px;
+    }
+    .game-round { font-family: var(--font-display); font-size: clamp(14px, 2vw, 20px); color: var(--gold); }
+    .game-scores { display: flex; gap: clamp(8px, 1.5vw, 16px); }
+    .score-pill { display: flex; align-items: center; gap: 6px; background: var(--surface-high); padding: 6px 12px; border-radius: 8px; font-size: 13px; }
+    .score-pill .sp-name { color: var(--text-muted); font-weight: 700; }
+    .score-pill .sp-val { font-family: var(--font-display); font-size: clamp(16px, 2vw, 20px); color: var(--gold); }
+
+    /* ── Rhythm Track ── */
+    .rhythm-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: clamp(12px, 2vw, 24px);
+      gap: clamp(16px, 2vw, 24px);
+    }
+
+    .track-container {
+      position: relative;
+      width: min(800px, 95vw);
+      height: min(400px, 50vh);
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 1px solid oklch(35% 0.04 30);
+      overflow: hidden;
+    }
+
+    /* Hit zone */
+    .hit-zone {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 60px;
+      background: oklch(25% 0.06 50 / 0.3);
+      border-top: 3px solid var(--accent-warm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .hit-zone-label {
+      font-family: var(--font-display);
+      font-size: 14px;
+      color: var(--accent-warm);
+      opacity: 0.6;
+    }
+
+    /* Beat lanes */
+    .lane-lines {
+      position: absolute; top: 0; bottom: 0;
+      left: 0; right: 0;
+      display: flex;
+      justify-content: space-around;
+      padding: 0 10%;
+    }
+    .lane-line {
+      flex: 1;
+      border-right: 1px solid oklch(30% 0.02 30);
+      opacity: 0.3;
+    }
+
+    /* Beat buttons at the bottom */
+    .beat-buttons {
+      display: flex;
+      justify-content: space-around;
+      width: min(800px, 95vw);
+      padding: 0 5%;
+    }
+    .beat-btn {
+      width: min(120px, 18vw);
+      height: min(120px, 18vw);
+      background: var(--surface-high);
+      border: 2px solid oklch(40% 0.04 30);
+      border-radius: 14px;
+      cursor: pointer;
+      font-family: var(--font-display);
+      font-size: clamp(14px, 2vw, 20px);
+      color: var(--text-muted);
+      transition: transform 0.1s ease-out-quart, border-color 0.15s, background 0.15s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .beat-btn:active { transform: scale(0.85); }
+    .beat-btn.pressed {
+      border-color: var(--accent-warm);
+      background: oklch(25% 0.08 50);
+      transform: scale(0.9);
+    }
+    .beat-btn.perfect-flash {
+      background: var(--green);
+      border-color: var(--green);
+      animation: perfectPulse 0.3s ease-out-quart;
+    }
+    .beat-btn.good-flash {
+      background: oklch(50% 0.12 50);
+      border-color: var(--accent-warm);
+      animation: goodPulse 0.3s ease-out-quart;
+    }
+    .beat-btn.miss-flash {
+      background: var(--danger);
+      border-color: var(--danger);
+      animation: missPulse 0.3s ease-out-quart;
+    }
+    @keyframes perfectPulse { 0% { transform: scale(1.2); } 100% { transform: scale(1); } }
+    @keyframes goodPulse { 0% { transform: scale(1.1); } 100% { transform: scale(1); } }
+    @keyframes missPulse { 0% { transform: scale(0.9); } 100% { transform: scale(1); } }
+
+    /* Beat markers on the track */
+    .beat-marker {
+      position: absolute;
+      width: 18%;
+      height: 24px;
+      border-radius: 6px;
+      transition: top 0.05s linear;
+      left: var(--lane-left);
+    }
+    .beat-marker.lane-0 { --lane-left: 5%; background: oklch(60% 0.2 330); }
+    .beat-marker.lane-1 { --lane-left: 27%; background: oklch(60% 0.2 85); }
+    .beat-marker.lane-2 { --lane-left: 49%; background: oklch(60% 0.2 180); }
+    .beat-marker.lane-3 { --lane-left: 71%; background: oklch(60% 0.2 260); }
+
+    .beat-marker.hit {
+      opacity: 0;
+      transform: scale(2);
+      transition: opacity 0.2s, transform 0.2s;
+    }
+
+    /* ── Result ── */
+    .result-card { background: var(--surface); border: 1px solid oklch(40% 0.04 30); border-radius: var(--radius); padding: clamp(32px, 5vw, 48px); width: min(520px, 90vw); text-align: center; }
+    .result-icon { font-size: 64px; margin-bottom: 12px; }
+    .result-title { font-family: var(--font-display); font-size: clamp(28px, 4vw, 40px); color: var(--accent-warm); margin-bottom: 24px; }
+    .result-scores { display: flex; gap: 24px; justify-content: center; margin-bottom: 32px; flex-wrap: wrap; }
+    .result-player { background: var(--surface-high); padding: 16px 24px; border-radius: 12px; min-width: 160px; }
+    .result-player.winner { border: 2px solid var(--gold); }
+    .result-player .rp-name { font-weight: 700; font-size: 16px; margin-bottom: 8px; }
+    .result-player .rp-score { font-family: var(--font-display); font-size: clamp(24px, 4vw, 36px); color: var(--gold); }
+
+    /* ── Accuracy display ── */
+    .accuracy-row { display: flex; justify-content: center; gap: 32px; margin-top: 16px; }
+    .accuracy-item { text-align: center; }
+    .accuracy-item .ai-label { font-size: 13px; color: var(--text-muted); }
+    .accuracy-item .ai-val { font-family: var(--font-display); font-size: 18px; }
+
+    /* ── Conn ── */
+    .conn-bar { position: fixed; top: 0; left: 0; right: 0; padding: 8px 16px; text-align: center; font-size: 13px; font-weight: 700; z-index: 50; }
+    .conn-bar.ok { background: var(--green); color: oklch(98% 0 0); }
+    .conn-bar.err { background: var(--danger); color: oklch(98% 0 0); }
+    .conn-bar.hidden { transform: translateY(-100%); opacity: 0; }
+
+    .fade-in { animation: fadeIn 0.4s ease-out-quart; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+    .countdown-overlay {
+      position: fixed; inset: 0; background: oklch(8% 0.02 30 / 0.7); display: flex; align-items: center; justify-content: center; z-index: 80;
+      font-family: var(--font-display); font-size: clamp(64px, 12vw, 120px); color: var(--accent-warm);
+      animation: countPulse 0.6s ease-out-quart;
+    }
+    @keyframes countPulse { 0% { transform: scale(2); opacity: 0; } 50% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .game-header { justify-content: center; }
+      .track-container { height: min(300px, 40vh); }
+      .beat-btn { height: min(80px, 14vw); }
+    }
+    @media (pointer: coarse) {
+      .beat-btn { height: min(90px, 16vw); border-radius: 12px; }
+      .btn { padding: 14px 28px; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="bgCanvas"></canvas>
+  <div id="app">
+    <div id="connBar" class="conn-bar hidden"></div>
+
+    <!-- Auth Modal -->
+    <div id="configModal" class="modal-overlay">
+      <div class="modal-card fade-in">
+        <h2>🎵 账户登录</h2>
+        <p>使用你在 Supabase 项目下注册的账户登录。仅 <strong>status = approved</strong> 的账户可进入对战。</p>
+        <div class="auth-tabs">
+          <button id="tabLogin" class="auth-tab active" onclick="switchAuthTab('login')">登录</button>
+          <button id="tabSignup" class="auth-tab" onclick="switchAuthTab('signup')">注册</button>
+        </div>
+        <div class="field-group"><label>邮箱</label><input id="authEmail" type="email" placeholder="you@example.com" autocomplete="email"></div>
+        <div class="field-group"><label>密码 <span class="hint">(至少 6 位)</span></label><input id="authPassword" type="password" placeholder="••••••••" autocomplete="current-password"></div>
+        <div id="signupExtra" class="hidden"><div class="field-group"><label>昵称</label><input id="authUsername" type="text" placeholder="昵称 (房间内显示)" maxlength="12"></div></div>
+        <button id="authSubmitBtn" class="btn btn-primary" onclick="handleAuth()">登录</button>
+        <p class="auth-status" id="authStatus"></p>
+      </div>
+    </div>
+
+    <!-- Lobby -->
+    <div id="lobbyScreen" class="screen">
+      <div class="lobby-icon">🎵</div>
+      <h1 class="lobby-title">节拍同步</h1>
+      <p class="lobby-subtitle">同一旋律，同一心跳——谁的手感最准？</p>
+      <div class="lobby-form">
+        <div class="field-group"><label>你的昵称</label><input id="playerName" placeholder="节拍手昵称" maxlength="12"></div>
+        <button class="btn btn-primary" onclick="createRoom()">创建房间</button>
+        <div class="field-group"><label>加入房间</label><input id="joinRoomId" placeholder="输入房间号" maxlength="6"></div>
+        <button class="btn btn-secondary" onclick="joinRoom()">加入对战</button>
+      </div>
+    </div>
+
+    <!-- Waiting -->
+    <div id="waitingScreen" class="screen">
+      <div class="waiting-card fade-in">
+        <h2>等待对手加入</h2>
+        <div class="room-id" id="roomIdDisplay">------</div>
+        <p class="waiting-hint">将房间号分享给朋友...</p>
+        <div class="player-list" id="playerList"></div>
+      </div>
+    </div>
+
+    <!-- Game -->
+    <div id="gameScreen" class="screen" style="display:none;">
+      <div class="game-header">
+        <div class="game-round" id="roundDisplay">第 1 轮</div>
+        <div class="game-scores" id="scoresDisplay"></div>
+      </div>
+      <div class="rhythm-area">
+        <div class="track-container" id="trackContainer">
+          <div class="lane-lines">
+            <div class="lane-line"></div>
+            <div class="lane-line"></div>
+            <div class="lane-line"></div>
+            <div class="lane-line"></div>
+          </div>
+          <div class="hit-zone"><div class="hit-zone-label">TAP ↓</div></div>
+        </div>
+        <div class="beat-buttons">
+          <div class="beat-btn" data-lane="0" id="btnLane0">D</div>
+          <div class="beat-btn" data-lane="1" id="btnLane1">F</div>
+          <div class="beat-btn" data-lane="2" id="btnLane2">J</div>
+          <div class="beat-btn" data-lane="3" id="btnLane3">K</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Result -->
+    <div id="resultScreen" class="screen">
+      <div class="result-card fade-in">
+        <div class="result-icon" id="resultIcon">🏆</div>
+        <div class="result-title" id="resultTitle">对战结束</div>
+        <div class="result-scores" id="resultScores"></div>
+        <div class="accuracy-row" id="accuracyRow"></div>
+        <button class="btn btn-primary" onclick="backToLobby()">再来一局</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ── State ── */
+    let channel = null;
+    let myId = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2);
+    let myName = '', roomId = '';
+    let players = {};
+    let myScore = 0, opponentScore = 0;
+    let myPerfects = 0, myGoods = 0, myMisses = 0;
+    let oppPerfects = 0, oppGoods = 0, oppMisses = 0;
+    let currentRound = 0;
+    let totalRounds = 3;
+    let beatsPerRound = 20;
+    let gameActive = false;
+    let isHost = false;
+    let beatSequence = [];
+    let beatMarkers = [];
+    let beatIndex = 0;
+    let gameStartTime = 0;
+    let fallSpeed = 2; // pixels per frame
+    let animFrameId = null;
+    let hitZoneY = 0;
+    let hitZoneHeight = 60;
+    const PERFECT_WINDOW = 40; // ms
+    const GOOD_WINDOW = 100; // ms
+    const BEAT_INTERVAL = 500; // ms between beats
+
+    /* ── Auth ── */
+    let authMode = 'login';
+    let currentProfile = null;
+
+    function switchAuthTab(mode) {
+      authMode = mode;
+      const isLogin = mode === 'login';
+      document.getElementById('tabLogin').classList.toggle('active', isLogin);
+      document.getElementById('tabSignup').classList.toggle('active', !isLogin);
+      document.getElementById('signupExtra').classList.toggle('hidden', isLogin);
+      document.getElementById('authSubmitBtn').textContent = isLogin ? '登录' : '注册并申请审核';
+      document.getElementById('authPassword').autocomplete = isLogin ? 'current-password' : 'new-password';
+      document.getElementById('authStatus').textContent = '';
+      document.getElementById('authStatus').className = 'auth-status';
+    }
+
+    function setAuthStatus(msg, isErr) {
+      const el = document.getElementById('authStatus');
+      el.textContent = msg;
+      el.className = 'auth-status' + (isErr ? ' err' : ' ok');
+    }
+
+    function initSupabase() { /* 保留函数签名兼容，但已由顶部硬编码取代 */ }
+
+    // ================================================================
+    //  🔧 配置区域 — 请替换为你自己的 Supabase 项目信息
+    // ================================================================
+    const SUPABASE_URL = 'https://zsyswamtmhqitsqbolut.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_lkwHgCi9HYVKgHxVTw_7UQ_U5PRng_W';
+
+    if (SUPABASE_URL.includes('YOUR_PROJECT') || SUPABASE_ANON_KEY.includes('YOUR_ANON_KEY')) {
+      alert('⚠️ 请先在代码顶部配置 SUPABASE_URL 和 SUPABASE_ANON_KEY');
+    }
+
+    // ================================================================
+    //  初始化 Supabase
+    // ================================================================
+    if (typeof supabase === 'undefined' || !supabase.createClient) {
+      console.error('Supabase SDK not loaded');
+      document.addEventListener('DOMContentLoaded', () => {
+        setAuthStatus('Supabase SDK 加载失败，请检查网络后刷新', true);
+      });
+    }
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { storage: sessionStorage }
+    });
+
+    async function handleAuth() {
+      const email = document.getElementById('authEmail').value.trim();
+      const password = document.getElementById('authPassword').value;
+      const username = document.getElementById('authUsername').value.trim();
+      if (!email || !password) { setAuthStatus('请填写邮箱和密码', true); return; }
+      if (password.length < 6) { setAuthStatus('密码至少 6 位', true); return; }
+      if (authMode === 'signup' && !username) { setAuthStatus('请填写昵称', true); return; }
+
+      const btn = document.getElementById('authSubmitBtn');
+      btn.disabled = true;
+      const origText = btn.textContent;
+      btn.textContent = authMode === 'login' ? '登录中…' : '注册中…';
+
+      try {
+        if (authMode === 'signup') {
+          const { data, error } = await supabaseClient.auth.signUp({
+            email, password,
+            options: { data: { username, display_name: username } }
+          });
+          if (error) throw error;
+          if (!data.session) {
+            setAuthStatus('注册成功！请去邮箱点击确认链接后再登录（可在 Supabase 控制台关闭 Email Confirm）', false);
+            switchAuthTab('login');
+            return;
+          }
+        } else {
+          const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+          if (error) throw error;
+        }
+
+        const profile = await fetchMyProfile();
+        if (!profile) {
+          setAuthStatus('登录成功但未找到 profile 记录，请联系管理员', true);
+          await supabaseClient.auth.signOut();
+          return;
+        }
+        if (profile.status !== 'approved') {
+          const label = { pending: '待审核', rejected: '已拒绝', banned: '已封禁' }[profile.status] || profile.status;
+          setAuthStatus(`账户当前状态：${label}，无法进入游戏`, true);
+          await supabaseClient.auth.signOut();
+          return;
+        }
+        currentProfile = profile;
+        try { localStorage.setItem('remembered_email', email); } catch(e) {}
+        document.getElementById('configModal').classList.add('hidden');
+        showScreen('lobbyScreen');
+        showConn(`✓ 欢迎，${profile.display_name || profile.username}`, false);
+        setTimeout(() => hideConn(), 2500);
+      } catch (e) {
+        setAuthStatus((authMode === 'login' ? '登录失败: ' : '注册失败: ') + (e.message || e), true);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = origText;
+      }
+    }
+
+    async function fetchMyProfile() {
+      const { data: { user }, error: uErr } = await supabaseClient.auth.getUser();
+      if (uErr || !user) return null;
+      const { data, error } = await supabaseClient.from('profiles').select('id, username, display_name, status, role').eq('id', user.id).single();
+      if (error) return null;
+      return data;
+    }
+
+    async function signOut() {
+      if (supabaseClient) await supabaseClient.auth.signOut();
+      currentProfile = null;
+      document.getElementById('configModal').classList.remove('hidden');
+      showScreen('configModal');
+    }
+
+    function showConn(msg, isErr) { const bar = document.getElementById('connBar'); bar.textContent = msg; bar.className = isErr ? 'conn-bar err' : 'conn-bar ok'; }
+    function hideConn() { document.getElementById('connBar').classList.add('hidden'); }
+    function showScreen(id) { document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.style.display = 'none'; }); const el = document.getElementById(id); el.classList.add('active'); el.style.display = id === 'gameScreen' ? 'flex' : 'flex'; }
+    function generateRoomId() { return Math.random().toString(36).slice(2, 8).toUpperCase(); }
+
+    function createRoom() {
+      myName = document.getElementById('playerName').value.trim() || '节拍' + Math.floor(Math.random() * 999);
+      roomId = generateRoomId();
+      isHost = true;
+      setupChannel();
+      showScreen('waitingScreen');
+      document.getElementById('roomIdDisplay').textContent = roomId;
+    }
+
+    function joinRoom() {
+      myName = document.getElementById('playerName').value.trim() || '节拍' + Math.floor(Math.random() * 999);
+      roomId = document.getElementById('joinRoomId').value.trim().toUpperCase();
+      if (!roomId || roomId.length < 4) { showConn('请输入有效房间号', true); setTimeout(() => hideConn(), 3000); return; }
+      isHost = false;
+      setupChannel();
+      showScreen('waitingScreen');
+      document.getElementById('roomIdDisplay').textContent = roomId;
+    }
+
+    function setupChannel() {
+      if (channel) supabaseClient.removeChannel(channel);
+      channel = supabaseClient.channel(`rhythm:${roomId}`, {
+        config: { broadcast: { self: true }, presence: { key: myId } }
+      });
+
+      channel.on('presence', { event: 'sync' }, () => {
+        players = {};
+        const state = channel.presenceState();
+        for (const [key, presences] of Object.entries(state)) {
+          for (const p of presences) players[p.id] = p.name;
+        }
+        updatePlayerList();
+        if (Object.keys(players).length === 2 && !gameActive) {
+          setTimeout(() => startRound(), 1500);
+        }
+      });
+
+      channel.on('broadcast', { event: 'round_start' }, (payload) => {
+        const { roundNum, beats, startTime } = payload.payload;
+        currentRound = roundNum;
+        beatSequence = beats;
+        gameStartTime = startTime;
+        beginRound();
+      });
+
+      channel.on('broadcast', { event: 'beat_hit' }, (payload) => {
+        const { playerId, lane, accuracy, score } = payload.payload;
+        handleBeatHit(playerId, lane, accuracy, score);
+      });
+
+      channel.on('broadcast', { event: 'round_end' }, (payload) => {
+        const { roundNum } = payload.payload;
+        if (roundNum === currentRound) endRound();
+      });
+
+      channel.subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') await channel.track({ id: myId, name: myName });
+      });
+    }
+
+    function updatePlayerList() {
+      const list = document.getElementById('playerList');
+      list.innerHTML = '';
+      for (const [id, name] of Object.entries(players)) {
+        const badge = document.createElement('div');
+        badge.className = 'player-badge';
+        badge.innerHTML = `<span class="dot"></span>${name}`;
+        list.appendChild(badge);
+      }
+    }
+
+    /* ── Game Flow ── */
+    function startRound() {
+      gameActive = true;
+      if (!isHost) return; // Host initiates
+
+      currentRound++;
+      if (currentRound > totalRounds) {
+        endGame();
+        return;
+      }
+
+      // Generate beat sequence: each beat has { lane, timeOffset }
+      beatSequence = [];
+      const tempo = Math.max(350, 500 - (currentRound - 1) * 50); // Speed up each round
+      for (let i = 0; i < beatsPerRound; i++) {
+        beatSequence.push({
+          lane: Math.floor(Math.random() * 4),
+          timeOffset: i * tempo
+        });
+      }
+
+      const startTime = Date.now() + 3000; // 3 second lead time
+      channel.send({
+        type: 'broadcast',
+        event: 'round_start',
+        payload: { roundNum: currentRound, beats: beatSequence, startTime }
+      });
+
+      beginRound();
+    }
+
+    function beginRound() {
+      showScreen('gameScreen');
+      document.getElementById('roundDisplay').textContent = `第 ${currentRound} 轮`;
+      updateScoresUI();
+      beatMarkers = [];
+      beatIndex = 0;
+      myScore = 0; opponentScore = 0;
+      myPerfects = 0; myGoods = 0; myMisses = 0;
+      oppPerfects = 0; oppGoods = 0; oppMisses = 0;
+
+      // Clear track
+      const container = document.getElementById('trackContainer');
+      container.querySelectorAll('.beat-marker').forEach(m => m.remove());
+
+      // Calculate hit zone position
+      const containerRect = container.getBoundingClientRect();
+      hitZoneY = containerRect.height - hitZoneHeight;
+
+      // Setup key listeners
+      setupKeyListeners();
+
+      // Show countdown
+      showCountdown(3, () => {
+        // Start spawning beats
+        spawnBeats();
+      });
+    }
+
+    function spawnBeats() {
+      if (!gameActive) return;
+      const container = document.getElementById('trackContainer');
+      const containerHeight = container.getBoundingClientRect().height;
+
+      beatSequence.forEach((beat, i) => {
+        setTimeout(() => {
+          if (!gameActive) return;
+          const marker = document.createElement('div');
+          marker.className = `beat-marker lane-${beat.lane}`;
+          marker.dataset.lane = beat.lane;
+          marker.dataset.index = i;
+          marker.style.top = '-24px';
+          container.appendChild(marker);
+          beatMarkers.push({ el: marker, lane: beat.lane, y: -24, index: i, hit: false });
+
+          // Animate fall
+          const fallDuration = containerHeight / fallSpeed / 60 * 1000; // ~2 seconds
+          marker.animate([
+            { top: '-24px' },
+            { top: (hitZoneY) + 'px' }
+          ], {
+            duration: fallDuration,
+            fill: 'forwards',
+            easing: 'linear'
+          });
+
+          // After it passes the hit zone, it's a miss
+          setTimeout(() => {
+            if (!marker.dataset.hit) {
+              myMisses++;
+              updateScoresUI();
+              marker.remove();
+            }
+          }, fallDuration + GOOD_WINDOW);
+        }, beat.timeOffset);
+      });
+
+      // Auto-end round after all beats should have passed
+      const lastBeatTime = beatSequence[beatSequence.length - 1].timeOffset;
+      const fallTime = 2500; // Approximate fall time
+      setTimeout(() => {
+        if (gameActive) {
+          channel.send({ type: 'broadcast', event: 'round_end', payload: { roundNum: currentRound } });
+          endRound();
+        }
+      }, lastBeatTime + fallTime + 1000);
+    }
+
+    function setupKeyListeners() {
+      const keyMap = { 'd': 0, 'f': 1, 'j': 2, 'k': 3 };
+
+      document.addEventListener('keydown', (e) => {
+        const lane = keyMap[e.key.toLowerCase()];
+        if (lane !== undefined && gameActive) hitLane(lane);
+      });
+
+      document.querySelectorAll('.beat-btn').forEach(btn => {
+        btn.addEventListener('pointerdown', () => {
+          const lane = parseInt(btn.dataset.lane);
+          if (gameActive) hitLane(lane);
+        });
+      });
+    }
+
+    function hitLane(lane) {
+      const btn = document.getElementById(`btnLane${lane}`);
+      btn.classList.add('pressed');
+      setTimeout(() => btn.classList.remove('pressed'), 100);
+
+      // Find the closest beat marker in this lane that hasn't been hit
+      const container = document.getElementById('trackContainer');
+      const containerRect = container.getBoundingClientRect();
+      const markers = container.querySelectorAll(`.beat-marker.lane-${lane}:not([data-hit])`);
+
+      let closestMarker = null;
+      let closestDist = Infinity;
+
+      markers.forEach(marker => {
+        const markerRect = marker.getBoundingClientRect();
+        const dist = Math.abs(markerRect.top - (containerRect.bottom - hitZoneHeight));
+        if (dist < closestDist) {
+          closestDist = dist;
+          closestMarker = marker;
+        }
+      });
+
+      if (!closestMarker) return;
+
+      // Determine accuracy
+      let accuracy, scoreAdd;
+      if (closestDist < PERFECT_WINDOW) {
+        accuracy = 'perfect'; scoreAdd = 100; myPerfects++;
+        btn.classList.add('perfect-flash');
+      } else if (closestDist < GOOD_WINDOW) {
+        accuracy = 'good'; scoreAdd = 50; myGoods++;
+        btn.classList.add('good-flash');
+      } else {
+        accuracy = 'miss'; scoreAdd = 0; myMisses++;
+        btn.classList.add('miss-flash');
+      }
+
+      setTimeout(() => {
+        btn.classList.remove('perfect-flash', 'good-flash', 'miss-flash');
+      }, 300);
+
+      myScore += scoreAdd;
+      closestMarker.dataset.hit = 'true';
+      closestMarker.classList.add('hit');
+      setTimeout(() => closestMarker.remove(), 200);
+
+      updateScoresUI();
+      channel.send({
+        type: 'broadcast',
+        event: 'beat_hit',
+        payload: { playerId: myId, lane, accuracy, score: scoreAdd }
+      });
+    }
+
+    function handleBeatHit(playerId, lane, accuracy, score) {
+      if (playerId === myId) return;
+      const btn = document.getElementById(`btnLane${lane}`);
+
+      if (accuracy === 'perfect') {
+        oppPerfects++;
+        btn.classList.add('perfect-flash');
+      } else if (accuracy === 'good') {
+        oppGoods++;
+        btn.classList.add('good-flash');
+      } else {
+        oppMisses++;
+        btn.classList.add('miss-flash');
+      }
+
+      opponentScore += score;
+      setTimeout(() => btn.classList.remove('perfect-flash', 'good-flash', 'miss-flash'), 300);
+      updateScoresUI();
+    }
+
+    function updateScoresUI() {
+      const container = document.getElementById('scoresDisplay');
+      container.innerHTML = '';
+      for (const [id, name] of Object.entries(players)) {
+        const score = id === myId ? myScore : opponentScore;
+        const pill = document.createElement('div');
+        pill.className = 'score-pill';
+        pill.innerHTML = `<span class="sp-name">${name}</span><span class="sp-val">${score}</span>`;
+        container.appendChild(pill);
+      }
+    }
+
+    function endRound() {
+      gameActive = false;
+      // Brief pause then next round or end
+      setTimeout(() => {
+        if (currentRound >= totalRounds) {
+          endGame();
+        } else {
+          if (isHost) startRound();
+        }
+      }, 2000);
+    }
+
+    function endGame() {
+      gameActive = false;
+      showScreen('resultScreen');
+
+      const winnerId = myScore > opponentScore ? myId :
+                       opponentScore > myScore ? Object.keys(players).find(id => id !== myId) : null;
+
+      const icon = document.getElementById('resultIcon');
+      const title = document.getElementById('resultTitle');
+      if (winnerId === myId) { icon.textContent = '🏆'; title.textContent = '你赢了！'; }
+      else if (winnerId) { icon.textContent = '👏'; title.textContent = `${players[winnerId]} 获胜`; }
+      else { icon.textContent = '🤝'; title.textContent = '平局！'; }
+
+      const container = document.getElementById('resultScores');
+      container.innerHTML = '';
+      for (const [id, name] of Object.entries(players)) {
+        const score = id === myId ? myScore : opponentScore;
+        const div = document.createElement('div');
+        div.className = 'result-player' + (id === winnerId ? ' winner' : '');
+        div.innerHTML = `<div class="rp-name">${name}</div><div class="rp-score">${score}</div>`;
+        container.appendChild(div);
+      }
+
+      // Show accuracy stats
+      const accRow = document.getElementById('accuracyRow');
+      accRow.innerHTML = '';
+      const pCount = id === myId ? myPerfects : oppPerfects;
+      const gCount = id === myId ? myGoods : oppGoods;
+      const mCount = id === myId ? myMisses : oppMisses;
+      for (const [id, name] of Object.entries(players)) {
+        const pf = id === myId ? myPerfects : oppPerfects;
+        const gd = id === myId ? myGoods : oppGoods;
+        const ms = id === myId ? myMisses : oppMisses;
+        const div = document.createElement('div');
+        div.className = 'accuracy-item';
+        div.innerHTML = `<div class="ai-label">${name}</div>
+          <div class="ai-val" style="color:var(--green)">Perfect: ${pf}</div>
+          <div class="ai-val" style="color:var(--accent)">Good: ${gd}</div>
+          <div class="ai-val" style="color:var(--danger)">Miss: ${ms}</div>`;
+        accRow.appendChild(div);
+      }
+    }
+
+    function showCountdown(n, cb) {
+      const overlay = document.createElement('div');
+      overlay.className = 'countdown-overlay';
+      overlay.textContent = n;
+      document.body.appendChild(overlay);
+      let count = n;
+      const iv = setInterval(() => {
+        count--;
+        if (count <= 0) { clearInterval(iv); overlay.remove(); cb(); }
+        else { overlay.textContent = count; overlay.style.animation = 'none'; requestAnimationFrame(() => overlay.style.animation = 'countPulse 0.6s ease-out-quart'); }
+      }, 800);
+    }
+
+    function backToLobby() {
+      if (channel) { supabaseClient.removeChannel(channel); channel = null; }
+      players = {}; gameActive = false;
+      showScreen('lobbyScreen');
+    }
+
+    /* ── Init ── */
+    (function prefillAuth() {
+      const remembered = localStorage.getItem('remembered_email');
+      if (remembered) document.getElementById('authEmail').value = remembered;
+    })();
+  </script>
+
+  <script>
+  (function() {
+    'use strict';
+    var canvas = document.getElementById('bgCanvas');
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+    var W = 0, H = 0, dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var CELL = 40;
+    var cols = 0, rows = 0;
+    var METEOR_COLORS = [
+      { r: 120, g: 130, b: 255 },
+      { r: 255, g: 180, b: 90 },
+      { r: 255, g: 120, b: 200 },
+      { r: 100, g: 255, b: 180 },
+      { r: 180, g: 140, b: 255 }
+    ];
+    function resize() {
+      W = window.innerWidth; H = window.innerHeight;
+      canvas.width = W * dpr; canvas.height = H * dpr;
+      canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      cols = Math.ceil(W / CELL) + 1; rows = Math.ceil(H / CELL) + 1;
+    }
+    function drawGrid() {
+      ctx.strokeStyle = 'rgba(110, 120, 200, 0.2)'; ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (var i = 0; i <= cols; i++) { var x = i * CELL; ctx.moveTo(x, 0); ctx.lineTo(x, H); }
+      for (var j = 0; j <= rows; j++) { var y = j * CELL; ctx.moveTo(0, y); ctx.lineTo(W, y); }
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(120, 130, 255, 0.3)';
+      for (var i2 = 0; i2 <= cols; i2++) for (var j2 = 0; j2 <= rows; j2++) ctx.fillRect(i2 * CELL - 0.5, j2 * CELL - 0.5, 1, 1);
+    }
+    function Meteor() {
+      this.horizontal = Math.random() > 0.5;
+      var c = METEOR_COLORS[Math.floor(Math.random() * METEOR_COLORS.length)];
+      this.r = c.r; this.g = c.g; this.b = c.b;
+      this.speed = 1.5 + Math.random() * 3;
+      this.tailLen = 100 + Math.random() * 180;
+      this.life = 0; this.maxLife = 200 + Math.random() * 300;
+      this.thickness = 1.5 + Math.random() * 1.5;
+      if (this.horizontal) {
+        this.row = Math.floor(Math.random() * rows);
+        this.y = this.row * CELL + CELL / 2;
+        this.reverse = Math.random() > 0.5;
+        this.x = this.reverse ? W + 50 : -50;
+        this.vx = this.reverse ? -this.speed : this.speed; this.vy = 0;
+      } else {
+        this.col = Math.floor(Math.random() * cols);
+        this.x = this.col * CELL + CELL / 2;
+        this.reverse = Math.random() > 0.5;
+        this.y = this.reverse ? H + 50 : -50;
+        this.vx = 0; this.vy = this.reverse ? -this.speed : this.speed;
+      }
+    }
+    Meteor.prototype.alpha = function() {
+      var fadeIn = 40, fadeOut = 80;
+      if (this.life < fadeIn) return this.life / fadeIn;
+      if (this.life > this.maxLife - fadeOut) return Math.max(0, (this.maxLife - this.life) / fadeOut);
+      return 1;
+    };
+    Meteor.prototype.update = function() {
+      this.life++; this.x += this.vx; this.y += this.vy;
+      if (this.horizontal) {
+        if (this.reverse && this.x < -this.tailLen) return false;
+        if (!this.reverse && this.x > W + this.tailLen) return false;
+      } else {
+        if (this.reverse && this.y < -this.tailLen) return false;
+        if (!this.reverse && this.y > H + this.tailLen) return false;
+      }
+      if (this.life > this.maxLife) return false;
+      return true;
+    };
+    Meteor.prototype.draw = function() {
+      var a = this.alpha(); if (a <= 0) return;
+      var c = this.r + ', ' + this.g + ', ' + this.b;
+      var tx = this.x - this.vx * (this.tailLen / this.speed);
+      var ty = this.y - this.vy * (this.tailLen / this.speed);
+      var grad = ctx.createLinearGradient(this.x, this.y, tx, ty);
+      grad.addColorStop(0, 'rgba(' + c + ', ' + (0.9 * a) + ')');
+      grad.addColorStop(0.3, 'rgba(' + c + ', ' + (0.4 * a) + ')');
+      grad.addColorStop(1, 'rgba(' + c + ', 0)');
+      ctx.strokeStyle = grad; ctx.lineWidth = this.thickness; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(this.x, this.y); ctx.lineTo(tx, ty); ctx.stroke();
+      ctx.shadowColor = 'rgba(' + c + ', ' + a + ')'; ctx.shadowBlur = 16;
+      ctx.fillStyle = 'rgba(' + c + ', ' + a + ')';
+      ctx.beginPath(); ctx.arc(this.x, this.y, this.thickness * 1.5, 0, Math.PI * 2); ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = 'rgba(255, 255, 255, ' + (0.7 * a) + ')';
+      ctx.beginPath(); ctx.arc(this.x, this.y, this.thickness * 0.6, 0, Math.PI * 2); ctx.fill();
+    };
+    var meteors = []; var MAX_METEORS = 60; var spawnCooldown = 0;
+    function spawnMeteor() { if (meteors.length < MAX_METEORS) meteors.push(new Meteor()); }
+    function loop() {
+      ctx.clearRect(0, 0, W, H); drawGrid();
+      meteors = meteors.filter(function(m) { var alive = m.update(); if (alive) m.draw(); return alive; });
+      if (spawnCooldown <= 0 && meteors.length < MAX_METEORS) { spawnMeteor(); spawnCooldown = 20 + Math.random() * 100; }
+      spawnCooldown--;
+      if (meteors.length === 0) { spawnMeteor(); spawnMeteor(); }
+      requestAnimationFrame(loop);
+    }
+    resize(); window.addEventListener('resize', resize);
+    for (var i = 0; i < 3; i++) spawnMeteor();
+    loop();
+  })();
+  </script>
+</body>
+</html>

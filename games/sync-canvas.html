@@ -1,0 +1,1441 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>TDFChat · 你乱花·我胡猜</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&family=Noto+Sans+SC:wght@300;400;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: oklch(14% 0.01 200);
+      --surface: oklch(20% 0.01 200);
+      --surface-high: oklch(28% 0.01 200);
+      --accent: oklch(68% 0.18 330);
+      --accent-light: oklch(82% 0.12 330);
+      --text: oklch(94% 0.01 200);
+      --text-muted: oklch(52% 0.02 200);
+      --green: oklch(58% 0.16 150);
+      --danger: oklch(55% 0.22 20);
+      --radius: 16px;
+      --font-display: 'Space Grotesk', sans-serif;
+      --font-body: 'Noto Sans SC', sans-serif;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: linear-gradient(135deg, oklch(14% 0.01 200) 0%, oklch(18% 0.02 195) 40%, oklch(10% 0.01 205) 100%);
+      color: var(--text);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      overflow-x: hidden;
+    }
+
+    #bgCanvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+
+    #app { width: 1200px; max-width: 100%; min-height: 100vh; position: relative; z-index: 1; }
+
+    body { overflow-y: hidden; }
+
+    /* ── 8px 像素动态背景层 (已弃用，保留空壳防 JS 报错) ── */
+    .bg-pixel-layer { display: none; }
+    .bg-sprite {
+      position: absolute;
+      display: grid;
+      gap: 0;
+      grid-template-columns: repeat(var(--cols, 16), 8px);
+      grid-template-rows: repeat(var(--rows, 16), 8px);
+      opacity: 0.32;
+      filter: drop-shadow(0 0 6px currentColor);
+      animation: bgFloat var(--dur, 24s) linear infinite;
+      will-change: transform;
+    }
+    .bg-sprite .px {
+      width: 8px; height: 8px;
+      background: transparent;
+    }
+    .bg-sprite .px.on { background: currentColor; }
+    @keyframes bgFloat {
+      0%   { transform: translate3d(0, 0, 0) rotate(0deg); }
+      50%  { transform: translate3d(40px, -28px, 0) rotate(8deg); }
+      100% { transform: translate3d(0, 0, 0) rotate(0deg); }
+    }
+    .bg-tile-strip {
+      position: fixed;
+      left: 0; right: 0;
+      height: 8px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, 8px);
+      gap: 0;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.18;
+    }
+    .bg-tile-strip .pxt {
+      width: 8px; height: 8px;
+      animation: bgStripe 3s steps(2) infinite;
+    }
+    @keyframes bgStripe {
+      0%, 50%   { background: oklch(35% 0.05 200); }
+      50.01%,100%{ background: oklch(22% 0.03 200); }
+    }
+
+
+    /* ── Modal ── */
+    .modal-overlay { position: fixed; inset: 0; background: oklch(10% 0.01 200 / 0.85); backdrop-filter: blur(12px); display: flex; align-items: center; justify-content: center; z-index: 100; }
+    .modal-overlay.hidden { display: none; }
+    .modal-card { background: var(--surface); border: 1px solid oklch(40% 0.01 200); border-radius: var(--radius); padding: clamp(24px, 4vw, 40px); width: min(480px, 90vw); box-shadow: 0 32px 80px oklch(0% 0 0 / 0.5); }
+    .modal-card h2 { font-family: var(--font-display); font-size: clamp(20px, 3vw, 28px); margin-bottom: 8px; color: var(--accent); }
+    .modal-card p { color: var(--text-muted); font-size: 14px; margin-bottom: 24px; line-height: 1.6; }
+    .field-group { margin-bottom: 16px; }
+    .field-group label { display: block; font-size: 13px; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; }
+    .field-group input { width: 100%; padding: 10px 14px; background: var(--bg); border: 1px solid oklch(40% 0.01 200); border-radius: 10px; color: var(--text); font-family: var(--font-body); font-size: 14px; outline: none; transition: border-color 0.2s; }
+    .field-group input:focus { border-color: var(--accent); }
+    .btn { display: inline-flex; align-items: center; justify-content: center; padding: 12px 24px; border-radius: 10px; font-family: var(--font-display); font-size: 14px; cursor: pointer; border: none; transition: transform 0.15s ease-out, box-shadow 0.2s; user-select: none; }
+    .btn:active { transform: scale(0.95); }
+    .btn-primary { background: var(--accent); color: oklch(98% 0 0); box-shadow: 0 4px 16px oklch(68% 0.18 330 / 0.3); }
+    .btn-ghost { background: transparent; color: var(--text-muted); border: 1px solid oklch(35% 0.01 200); padding: 8px 16px; font-size: 13px; }
+    .btn-ghost:hover { color: var(--text); border-color: oklch(45% 0.01 200); }
+    .lobby-account { margin-top: 12px; font-size: 12px; color: var(--text-dim); text-align: center; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+
+    .auth-tabs { display: flex; gap: 4px; background: var(--surface-high); padding: 4px; border-radius: 10px; margin: 8px 0 16px; }
+    .auth-tab { flex: 1; padding: 10px 12px; border: none; background: transparent; color: var(--text-dim); font-size: 14px; font-weight: 600; border-radius: 7px; cursor: pointer; transition: all 0.2s; }
+    .auth-tab.active { background: var(--accent); color: oklch(98% 0 0); box-shadow: 0 2px 8px oklch(68% 0.18 330 / 0.25); }
+    .auth-status { margin: 12px 0 0; min-height: 20px; font-size: 13px; text-align: center; line-height: 1.4; }
+    .auth-status.ok  { color: var(--green); }
+    .auth-status.err { color: var(--accent); }
+    .hint { color: var(--text-dim); font-size: 12px; font-weight: 400; }
+    #signupExtra.hidden { display: none; }
+    .btn-secondary { background: var(--surface-high); color: var(--text); border: 1px solid oklch(40% 0.01 200); }
+    .btn-sm { padding: 8px 14px; font-size: 12px; }
+
+    /* ── Screen ── */
+    .screen { display: none; padding: 0; position: relative; z-index: 1; }
+    .screen.active { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; }
+
+    /* ── Lobby ── */
+    .lobby-icon { font-size: clamp(56px, 8vw, 96px); margin-bottom: 16px; }
+    .lobby-title { font-family: var(--font-display); font-size: clamp(36px, 7vw, 72px); text-align: center; color: var(--accent); margin-bottom: 4px; letter-spacing: -0.02em; }
+    .lobby-subtitle { font-size: clamp(14px, 2vw, 18px); color: var(--text-muted); text-align: center; margin-bottom: clamp(32px, 5vw, 48px); }
+    .lobby-form { display: flex; flex-direction: column; gap: 16px; width: min(360px, 90vw); }
+
+    /* ── Mode Selection ── */
+    .mode-selector { display: flex; gap: 12px; width: min(360px, 90vw); }
+    .mode-btn {
+      flex: 1; padding: 16px; background: var(--surface); border: 2px solid oklch(40% 0.01 200);
+      border-radius: 12px; cursor: pointer; transition: border-color 0.15s, background 0.15s;
+      text-align: center;
+    }
+    .mode-btn:hover { border-color: var(--accent); background: var(--surface-high); }
+    .mode-btn.selected { border-color: var(--accent); background: oklch(25% 0.04 330); }
+    .mode-btn .mode-emoji { font-size: 28px; margin-bottom: 4px; }
+    .mode-btn .mode-label { font-family: var(--font-display); font-size: 14px; color: var(--text); }
+
+    /* ── Waiting ── */
+    .waiting-card { background: var(--surface); border: 1px solid oklch(40% 0.01 200); border-radius: var(--radius); padding: clamp(24px, 4vw, 40px); width: min(480px, 90vw); text-align: center; }
+    .waiting-card h2 { font-family: var(--font-display); font-size: clamp(18px, 3vw, 24px); color: var(--accent); margin-bottom: 16px; }
+    .room-id { font-family: var(--font-display); font-size: clamp(28px, 4vw, 40px); color: var(--accent); background: var(--bg); padding: 12px 24px; border-radius: 10px; margin: 12px 0 24px; letter-spacing: 0.08em; border: 2px dashed oklch(50% 0.02 330); }
+    .player-list { display: flex; gap: 12px; justify-content: center; margin-bottom: 24px; flex-wrap: wrap; }
+    .player-badge { display: flex; align-items: center; gap: 8px; background: var(--surface-high); padding: 8px 16px; border-radius: 10px; font-size: 14px; font-weight: 700; }
+    .player-badge .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--green); animation: pulse-dot 1.5s infinite; }
+    @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+    .waiting-hint { color: var(--text-muted); font-size: 14px; }
+
+    /* ── Game ── */
+    .game-layout {
+      display: flex; flex-direction: column;
+      width: 100%;
+      max-width: 1200px;
+      height: 100vh;
+      max-height: 100vh;
+      flex: 1;
+      min-height: 0;
+    }
+    .game-toolbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: clamp(10px, 2vw, 16px) clamp(16px, 3vw, 24px);
+      background: var(--surface);
+      border-bottom: 1px solid oklch(35% 0.01 200);
+      flex-wrap: wrap; gap: 8px;
+    }
+    .toolbar-group { display: flex; align-items: center; gap: 8px; }
+    .toolbar-label { font-family: var(--font-display); font-size: 13px; color: var(--text-muted); }
+    .timer-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 12px;
+      background: oklch(25% 0.04 330);
+      color: var(--accent-light);
+      border: 1px solid oklch(40% 0.06 330);
+      border-radius: 999px;
+      font-family: var(--font-display);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+    .timer-pill.warn  { color: oklch(80% 0.18 80); border-color: oklch(50% 0.10 80); background: oklch(28% 0.05 80); }
+    .timer-pill.danger{ color: oklch(98% 0 0); border-color: oklch(55% 0.22 20); background: oklch(40% 0.15 20); animation: timerPulse 0.6s ease-in-out infinite; }
+    @keyframes timerPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+    .hidden { display: none !important; }
+
+    .color-palette {
+      display: flex; gap: 6px; flex-wrap: wrap;
+    }
+    .color-swatch {
+      width: 28px; height: 28px;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: transform 0.1s ease-out, border-color 0.15s;
+      flex-shrink: 0;
+    }
+    .color-swatch:hover { transform: scale(1.1); }
+    .color-swatch.active { border-color: #FFFFFF; transform: scale(1.15); }
+
+    .tool-btn {
+      width: 36px; height: 36px;
+      border-radius: 8px;
+      background: var(--surface-high);
+      border: 1px solid oklch(40% 0.01 200);
+      color: var(--text);
+      font-size: 16px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .tool-btn:hover { border-color: var(--accent); }
+    .tool-btn.active { background: oklch(25% 0.04 330); border-color: var(--accent); }
+
+    /* ── Canvas ── */
+    .canvas-area {
+      flex: 1;
+      display: flex; align-items: center; justify-content: center;
+      padding: clamp(8px, 2vw, 16px);
+      position: relative;
+      min-height: 0;
+      overflow: hidden; /* 固定 1200×800 + CSS transform 缩放，不需要滚动条；auto 会因为画布 DOM 尺寸始终是 1200×800 触发滚动 */
+    }
+
+    .pixel-canvas {
+      display: grid;
+      gap: 0;
+      background: oklch(30% 0.01 200);
+      border-radius: 8px;
+      border: 2px solid oklch(35% 0.01 200);
+      touch-action: none;
+      user-select: none;
+      flex-shrink: 0;
+      transform-origin: center center;
+      will-change: transform;
+    }
+
+    .pixel-cell {
+      background: oklch(98% 0 0);
+      border-radius: 1px;
+      cursor: crosshair;
+      will-change: background-color;
+    }
+    .pixel-cell.painted-by-other {
+      animation: paintFlash 0.3s ease-out;
+    }
+    @keyframes paintFlash {
+      0% { transform: scale(1.3); }
+      100% { transform: scale(1); }
+    }
+
+    /* ── Guess Mode ── */
+    .guess-bar {
+      display: flex; align-items: center; justify-content: center; gap: 16px;
+      padding: 12px 16px;
+      background: var(--surface);
+      border-top: 1px solid oklch(35% 0.01 200);
+      flex-wrap: wrap;
+    }
+    .guess-word-display {
+      font-family: var(--font-display);
+      font-size: 18px;
+      color: var(--accent);
+      padding: 8px 16px;
+      background: var(--surface-high);
+      border-radius: 8px;
+    }
+    .guess-input-group { display: flex; gap: 8px; }
+    .guess-input {
+      padding: 8px 14px;
+      background: var(--bg);
+      border: 1px solid oklch(40% 0.01 200);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 14px;
+      width: min(200px, 40vw);
+      outline: none;
+    }
+    .guess-input:focus { border-color: var(--accent); }
+
+    /* ── Connection ── */
+    .conn-bar { position: fixed; top: 0; left: 0; right: 0; padding: 8px 16px; text-align: center; font-size: 13px; font-weight: 700; z-index: 50; }
+    .conn-bar.ok { background: var(--green); color: oklch(98% 0 0); }
+    .conn-bar.err { background: var(--danger); color: oklch(98% 0 0); }
+    .conn-bar.hidden { transform: translateY(-100%); opacity: 0; }
+
+    .fade-in { animation: fadeIn 0.4s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+    .countdown-overlay {
+      position: fixed; inset: 0; background: oklch(10% 0.01 200 / 0.7); display: flex; align-items: center; justify-content: center; z-index: 80;
+      font-family: var(--font-display); font-size: clamp(64px, 12vw, 120px); color: var(--accent);
+      animation: countPulse 0.6s ease-out;
+    }
+    @keyframes countPulse { 0% { transform: scale(2); opacity: 0; } 50% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+
+    /* ── 超时 / 答案揭晓遮罩 ── */
+    .timeout-mask {
+      position: fixed; inset: 0;
+      background: oklch(8% 0.01 200 / 0.78);
+      backdrop-filter: blur(8px);
+      display: flex; align-items: center; justify-content: center; flex-direction: column;
+      gap: 16px; padding: 24px;
+      z-index: 90;
+      animation: fadeIn 0.25s ease-out;
+    }
+    .timeout-mask .emoji { font-size: clamp(48px, 8vw, 80px); }
+    .timeout-mask .title { font-family: var(--font-display); font-size: clamp(22px, 4vw, 36px); color: var(--accent); font-weight: 700; text-align: center; }
+    .timeout-mask .answer { font-family: var(--font-display); font-size: clamp(28px, 5vw, 48px); color: var(--text); text-align: center; background: oklch(25% 0.04 330); padding: 12px 28px; border-radius: 12px; border: 2px dashed oklch(50% 0.05 330); }
+    .timeout-mask .next-hint { color: var(--text-muted); font-size: 14px; }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .game-toolbar { justify-content: center; }
+      .color-swatch { width: 24px; height: 24px; }
+      .toolbar-label { display: none; }
+    }
+    @media (pointer: coarse) {
+      .btn { padding: 14px 28px; }
+      .pixel-cell { border-radius: 0; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="bgCanvas"></canvas>
+  <div id="app">
+    <div id="connBar" class="conn-bar hidden"></div>
+
+    <!-- 8px 像素动态背景 -->
+    <div class="bg-pixel-layer" id="bgPixelLayer" aria-hidden="true"></div>
+
+    <!-- Auth Modal -->
+    <div id="configModal" class="modal-overlay">
+      <div class="modal-card fade-in">
+        <h2>🎨 <br>欢迎来到 你luan画我hu猜游戏</h2>
+        <p>使用你在 TDFChat 项目下注册的账户登录。</p>
+        <div class="auth-tabs">
+          <button id="tabLogin" class="auth-tab active" onclick="switchAuthTab('login')">登录</button>
+          <button id="tabSignup" class="auth-tab" onclick="switchAuthTab('signup')">注册</button>
+        </div>
+        <div class="field-group"><label>邮箱</label><input id="authEmail" type="email" placeholder="you@example.com" autocomplete="email" onkeydown="if(event.key==='Enter'){handleAuth();}"></div>
+        <div class="field-group"><label>密码 <span class="hint">(至少 6 位)</span></label><input id="authPassword" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter'){handleAuth();}"></div>
+        <div id="signupExtra" class="hidden"><div class="field-group"><label>昵称</label><input id="authUsername" type="text" placeholder="昵称 (房间内显示)" maxlength="12" onkeydown="if(event.key==='Enter'){handleAuth();}"></div></div>
+        <button id="authSubmitBtn" class="btn btn-primary" onclick="handleAuth()">登录</button>
+        <p class="auth-status" id="authStatus"></p>
+      </div>
+    </div>
+
+    <!-- Lobby -->
+    <div id="lobbyScreen" class="screen">
+      <div class="lobby-icon">🎨</div>
+      <h1 class="lobby-title">同步画板</h1>
+      <p class="lobby-subtitle">实时协作绘画，或画猜猜挑战！</p>
+      <div class="lobby-form">
+        <div class="field-group"><label>你的昵称</label><input id="playerName" placeholder="画家昵称" maxlength="12"></div>
+        <div class="mode-selector">
+          <div class="mode-btn selected" data-mode="collab" onclick="selectMode('collab')">
+            <div class="mode-emoji">🖌</div><div class="mode-label">协作绘画</div>
+          </div>
+          <div class="mode-btn" data-mode="guess" onclick="selectMode('guess')">
+            <div class="mode-emoji">🎯</div><div class="mode-label">画猜猜</div>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="createRoom()">创建房间</button>
+        <div class="field-group"><label>加入房间</label><input id="joinRoomId" placeholder="输入房间号" maxlength="6"></div>
+        <button class="btn btn-secondary" onclick="joinRoom()">加入画板</button>
+        <button class="btn btn-ghost" id="logoutBtn" onclick="signOut()" style="margin-top:8px;">退出登录</button>
+        <div class="lobby-account" id="lobbyAccount"></div>
+      </div>
+    </div>
+
+    <!-- Waiting -->
+    <div id="waitingScreen" class="screen">
+      <div class="waiting-card fade-in">
+        <h2>等待画友加入</h2>
+        <div class="room-id" id="roomIdDisplay">------</div>
+        <p class="waiting-hint">将房间号分享给朋友...</p>
+        <div class="player-list" id="playerList"></div>
+      </div>
+    </div>
+
+    <!-- Game -->
+    <div id="gameScreen" class="screen" style="display:none; min-height:100vh; max-height:100vh; height:100vh; padding:0;">
+      <div class="game-layout">
+        <div class="game-toolbar">
+          <div class="toolbar-group" id="toolDrawGroup">
+            <span class="toolbar-label">画笔</span>
+            <div class="tool-btn active" id="toolPen" onclick="setTool('pen')">✏️</div>
+            <div class="tool-btn" id="toolEraser" onclick="setTool('eraser')">🧹</div>
+          </div>
+          <div class="toolbar-group" id="toolColorGroup">
+            <span class="toolbar-label">颜色</span>
+            <div class="color-palette" id="colorPalette"></div>
+          </div>
+          <div class="toolbar-group">
+            <span class="timer-pill hidden" id="timerPill">⏱ <span id="timerCount">60</span>s</span>
+            <button class="btn btn-sm btn-secondary hidden" id="btnClearCanvas" onclick="clearCanvas()">清空画布</button>
+            <button class="btn btn-sm btn-primary hidden" id="btnFinish" onclick="finishDrawing()">完成</button>
+            <button class="btn btn-sm btn-secondary" onclick="backToLobby()">退出</button>
+          </div>
+        </div>
+        <div class="canvas-area" id="canvasArea">
+          <div class="pixel-canvas" id="pixelCanvas"></div>
+        </div>
+        <div class="guess-bar" id="guessBar" style="display:none;">
+          <div class="guess-word-display" id="guessWordDisplay">苹果</div>
+          <div class="guess-input-group" id="guessInputGroup">
+            <input class="guess-input" id="guessInput" placeholder="输入你的猜测..." onkeydown="if(event.key==='Enter'){submitGuess();}">
+            <button class="btn btn-sm btn-primary" onclick="submitGuess()">猜！</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ── Colors ── */
+    const COLORS = [
+      '#E53935', '#FF7043', '#FFB300', '#FDD835',
+      '#66BB6A', '#26A69A', '#29B6F6', '#42A5F5',
+      '#5C6BC0', '#7E57C2', '#AB47BC', '#EC407A',
+      '#000000', '#424242', '#9E9E9E', '#FFFFFF',
+    ];
+
+    const GUESS_WORDS = [
+      '苹果', '香蕉', '太阳', '月亮', '星星', '房子', '汽车', '飞机',
+      '猫咪', '小狗', '鱼', '树', '花', '雨伞', '眼镜', '书',
+      '手机', '杯子', '蛋糕', '冰淇淋', '火箭', '自行车', '吉他', '帽子',
+      '蝴蝶', '蜗牛', '彩虹', '闪电', '钻石', '爱心', '笑脸', '蛋糕',
+    ];
+
+    /* ── State ── */
+    let channel = null;
+    let myId = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2);
+    let myName = '', roomId = '';
+    let players = {};
+    let gameMode = 'collab';
+    let currentColor = '#000000';
+    let currentTool = 'pen';
+    let gridSize = { cols: 150, rows: 100 };
+    let cellSize = 8;
+    let canvasWidth = 1200;
+    let gridData = []; // 2D array of colors
+    let cells = [];    // 一维 cells 数组，cells[row*cols+col] -> DOM 节点
+    let isDrawing = false;
+    let isDrawer = false;
+    let guessWord = '';
+    let gameActive = false;
+    let pendingStart = false; // 防止两端都触发 startGame
+    let roundPhase = 'idle';
+    let timerHandle = null;
+    let timerRemaining = 0;
+    let roundServerStart = 0;
+
+    /* ── Mode Selection ── */
+    function selectMode(mode) {
+      gameMode = mode;
+      document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('selected', b.dataset.mode === mode));
+    }
+
+    /* ── Auth ── */
+    let authMode = 'login';
+    let currentProfile = null;
+
+    function switchAuthTab(mode) {
+      authMode = mode;
+      const isLogin = mode === 'login';
+      document.getElementById('tabLogin').classList.toggle('active', isLogin);
+      document.getElementById('tabSignup').classList.toggle('active', !isLogin);
+      document.getElementById('signupExtra').classList.toggle('hidden', isLogin);
+      document.getElementById('authSubmitBtn').textContent = isLogin ? '登录' : '注册并申请审核';
+      document.getElementById('authPassword').autocomplete = isLogin ? 'current-password' : 'new-password';
+      document.getElementById('authStatus').textContent = '';
+      document.getElementById('authStatus').className = 'auth-status';
+    }
+
+    function setAuthStatus(msg, isErr) {
+      const el = document.getElementById('authStatus');
+      el.textContent = msg;
+      el.className = 'auth-status' + (isErr ? ' err' : ' ok');
+    }
+
+    // ================================================================
+    //  🔧 配置区域 — 请替换为你自己的 Supabase 项目信息
+    // ================================================================
+    const SUPABASE_URL = 'https://zsyswamtmhqitsqbolut.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_lkwHgCi9HYVKgHxVTw_7UQ_U5PRng_W';
+
+    if (SUPABASE_URL.includes('YOUR_PROJECT') || SUPABASE_ANON_KEY.includes('YOUR_ANON_KEY')) {
+      alert('⚠️ 请先在代码顶部配置 SUPABASE_URL 和 SUPABASE_ANON_KEY');
+    }
+
+    // ================================================================
+    //  初始化 Supabase
+    // ================================================================
+    if (typeof supabase === 'undefined' || !supabase.createClient) {
+      console.error('Supabase SDK not loaded');
+      document.addEventListener('DOMContentLoaded', () => {
+        setAuthStatus('Supabase SDK 加载失败，请检查网络后刷新', true);
+      });
+    }
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { storage: sessionStorage, persistSession: true, autoRefreshToken: true }
+    });
+
+    // 页面加载时尝试恢复 Supabase session
+    document.addEventListener('DOMContentLoaded', () => {
+      // 先尝试从 sessionStorage 恢复；Supabase 会自动处理 token refresh
+      tryRestoreSession();
+    });
+
+    async function handleAuth() {
+      const email = document.getElementById('authEmail').value.trim();
+      const password = document.getElementById('authPassword').value;
+      const username = document.getElementById('authUsername').value.trim();
+      if (!email || !password) { setAuthStatus('请填写邮箱和密码', true); return; }
+      if (password.length < 6) { setAuthStatus('密码至少 6 位', true); return; }
+      if (authMode === 'signup' && !username) { setAuthStatus('请填写昵称', true); return; }
+
+      const btn = document.getElementById('authSubmitBtn');
+      btn.disabled = true;
+      const origText = btn.textContent;
+      btn.textContent = authMode === 'login' ? '登录中…' : '注册中…';
+
+      try {
+        if (authMode === 'signup') {
+          const { data, error } = await supabaseClient.auth.signUp({
+            email, password,
+            options: { data: { username, display_name: username } }
+          });
+          if (error) throw error;
+          if (!data.session) {
+            setAuthStatus('注册成功！请去邮箱点击确认链接后再登录（可在 Supabase 控制台关闭 Email Confirm）', false);
+            switchAuthTab('login');
+            return;
+          }
+        } else {
+          const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+          if (error) throw error;
+        }
+
+        const profile = await fetchMyProfile();
+        if (!profile) {
+          setAuthStatus('登录成功但未找到 profile 记录，请联系管理员', true);
+          await supabaseClient.auth.signOut();
+          return;
+        }
+        if (profile.status !== 'approved') {
+          const label = { pending: '待审核', rejected: '已拒绝', banned: '已封禁' }[profile.status] || profile.status;
+          setAuthStatus(`账户当前状态：${label}，无法进入游戏`, true);
+          await supabaseClient.auth.signOut();
+          return;
+        }
+        currentProfile = profile;
+        try { localStorage.setItem('remembered_email', email); } catch(e) {}
+        document.getElementById('configModal').classList.add('hidden');
+        showScreen('lobbyScreen');
+        applyProfileToLobby();
+        markActivity();
+        showConn(`✓ 欢迎，${profile.display_name || profile.username}`, false);
+        setTimeout(() => hideConn(), 2500);
+      } catch (e) {
+        setAuthStatus((authMode === 'login' ? '登录失败: ' : '注册失败: ') + (e.message || e), true);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = origText;
+      }
+    }
+
+    async function fetchMyProfile() {
+      const { data: { user }, error: uErr } = await supabaseClient.auth.getUser();
+      if (uErr || !user) return null;
+      const { data, error } = await supabaseClient.from('profiles').select('id, username, display_name, status, role').eq('id', user.id).single();
+      if (error) return null;
+      return data;
+    }
+
+    async function signOut(silent) {
+      stopIdleTimer();
+      if (supabaseClient) {
+        try { await supabaseClient.auth.signOut(); } catch(e) {}
+      }
+      currentProfile = null;
+      try { localStorage.removeItem('last_activity_ts'); } catch(e) {}
+      const modal = document.getElementById('configModal');
+      modal.classList.remove('hidden');
+      showScreen('configModal');
+      // 清空登录表单输入
+      const emailEl = document.getElementById('authEmail');
+      const passEl = document.getElementById('authPassword');
+      const userEl = document.getElementById('authUsername');
+      if (emailEl) emailEl.value = '';
+      if (passEl) passEl.value = '';
+      if (userEl) userEl.value = '';
+      const nameEl = document.getElementById('playerName');
+      if (nameEl) nameEl.value = '';
+      const accEl = document.getElementById('lobbyAccount');
+      if (accEl) accEl.textContent = '';
+      if (!silent) showConn('已退出登录', false), setTimeout(() => hideConn(), 1500);
+    }
+
+    /* ── Idle / 自动退出登录 ── */
+    const IDLE_TIMEOUT_MS = 60 * 60 * 1000; // 1 小时无操作自动登出
+    let idleTimer = null;
+    function markActivity() {
+      try { localStorage.setItem('last_activity_ts', String(Date.now())); } catch(e) {}
+      scheduleIdleCheck();
+    }
+    function scheduleIdleCheck() {
+      if (idleTimer) clearTimeout(idleTimer);
+      idleTimer = setTimeout(checkIdleTimeout, IDLE_TIMEOUT_MS);
+    }
+    function checkIdleTimeout() {
+      let last = 0;
+      try { last = parseInt(localStorage.getItem('last_activity_ts') || '0', 10) || 0; } catch(e) {}
+      if (!last) { scheduleIdleCheck(); return; }
+      if (Date.now() - last >= IDLE_TIMEOUT_MS) {
+        showConn('1 小时无操作，已自动退出登录', true);
+        setTimeout(() => signOut(true), 800);
+      } else {
+        // 还没到时间，再排一次
+        scheduleIdleCheck();
+      }
+    }
+    function stopIdleTimer() {
+      if (idleTimer) { clearTimeout(idleTimer); idleTimer = null; }
+    }
+    // 监听用户活动
+    ['mousedown', 'keydown', 'pointerdown', 'touchstart', 'wheel'].forEach(ev => {
+      window.addEventListener(ev, () => { if (currentProfile) markActivity(); }, { passive: true });
+    });
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden && currentProfile) checkIdleTimeout();
+    });
+
+    /* ── 应用 profile 到 lobby ── */
+    function applyProfileToLobby() {
+      if (!currentProfile) return;
+      const nameEl = document.getElementById('playerName');
+      if (nameEl && !nameEl.value) {
+        // 默认填入账户的昵称，但保留用户随时修改的能力
+        nameEl.value = currentProfile.display_name || currentProfile.username || '';
+      }
+      const accEl = document.getElementById('lobbyAccount');
+      if (accEl) accEl.textContent = `已登录：${currentProfile.display_name || currentProfile.username}`;
+    }
+
+    /* ── 启动时尝试恢复 Supabase session ── */
+    async function tryRestoreSession() {
+      try {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (!session || !session.user) return false;
+        const profile = await fetchMyProfile();
+        if (!profile) return false;
+        if (profile.status !== 'approved') {
+          // 状态不允许，恢复失败
+          try { await supabaseClient.auth.signOut(); } catch(e) {}
+          return false;
+        }
+        currentProfile = profile;
+        document.getElementById('configModal').classList.add('hidden');
+        showScreen('lobbyScreen');
+        applyProfileToLobby();
+        // 检查 idle：可能刷新前已经很久没动
+        let last = 0;
+        try { last = parseInt(localStorage.getItem('last_activity_ts') || '0', 10) || 0; } catch(e) {}
+        if (last && Date.now() - last >= IDLE_TIMEOUT_MS) {
+          showConn('1 小时无操作，已自动退出登录', true);
+          setTimeout(() => signOut(true), 800);
+        } else {
+          showConn(`✓ 欢迎回来，${profile.display_name || profile.username}`, false);
+          setTimeout(() => hideConn(), 2000);
+          markActivity();
+        }
+        return true;
+      } catch (e) {
+        console.warn('restore session failed:', e);
+        return false;
+      }
+    }
+
+    function showConn(msg, isErr) { const bar = document.getElementById('connBar'); bar.textContent = msg; bar.className = isErr ? 'conn-bar err' : 'conn-bar ok'; }
+    function hideConn() { document.getElementById('connBar').classList.add('hidden'); }
+    function showScreen(id) { document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.style.display = 'none'; }); const el = document.getElementById(id); el.classList.add('active'); el.style.display = 'flex'; }
+    function generateRoomId() { return Math.random().toString(36).slice(2, 8).toUpperCase(); }
+
+    function createRoom() {
+      myName = document.getElementById('playerName').value.trim() || '画家' + Math.floor(Math.random() * 999);
+      roomId = generateRoomId();
+      setupChannel();
+      showScreen('waitingScreen');
+      document.getElementById('roomIdDisplay').textContent = roomId;
+    }
+
+    function joinRoom() {
+      myName = document.getElementById('playerName').value.trim() || '画家' + Math.floor(Math.random() * 999);
+      roomId = document.getElementById('joinRoomId').value.trim().toUpperCase();
+      if (!roomId || roomId.length < 4) { showConn('请输入有效房间号', true); setTimeout(() => hideConn(), 3000); return; }
+      setupChannel();
+      showScreen('waitingScreen');
+      document.getElementById('roomIdDisplay').textContent = roomId;
+    }
+
+    function setupChannel() {
+      if (channel) supabaseClient.removeChannel(channel);
+      channel = supabaseClient.channel(`canvas:${roomId}`, {
+        config: { broadcast: { self: true }, presence: { key: myId } }
+      });
+
+      channel.on('presence', { event: 'sync' }, () => {
+        players = {};
+        const state = channel.presenceState();
+        for (const [key, presences] of Object.entries(state)) {
+          for (const p of presences) players[p.id] = { name: p.name, color: p.cursorColor };
+        }
+        updatePlayerList();
+        // 用 presenceState 的 key 数判断人数（避免 p.id 缺失/重复导致 length 错位）
+        const presenceCount = Object.keys(state).length;
+        console.log('[presence sync] keys =', presenceCount, 'players =', Object.keys(players).length, 'state =', state);
+        if (presenceCount >= 2 && !gameActive && !pendingStart) {
+          pendingStart = true;
+          setTimeout(() => {
+            // 二次校验：期间可能已有人触发
+            if (gameActive) { pendingStart = false; return; }
+            startGame();
+            pendingStart = false;
+          }, 1000);
+        }
+      });
+
+      // 像素广播（带 cursor 信息合包，减少网络包数）
+      channel.on('broadcast', { event: 'pixel_paint' }, (payload) => {
+        const p = payload.payload || {};
+        const { row, col, color, playerId, cr } = p;
+        paintPixel(row, col, color, playerId !== myId);
+        if (cr && playerId !== myId) updateRemoteCursor(playerId, cr.row, cr.col);
+      });
+
+      channel.on('broadcast', { event: 'canvas_clear' }, () => {
+        clearCanvasLocal();
+      });
+
+      channel.on('broadcast', { event: 'cursor_move' }, (payload) => {
+        const { playerId, row, col } = payload.payload;
+        updateRemoteCursor(playerId, row, col);
+      });
+
+      channel.on('broadcast', { event: 'game_start' }, (payload) => {
+        gameMode = payload.payload.mode;
+        guessWord = payload.payload.word || '';
+        isDrawer = payload.payload.drawerId === myId;
+        beginGame();
+      });
+
+      channel.on('broadcast', { event: 'guess_correct' }, (payload) => {
+        const { playerId, playerName, word } = payload.payload;
+        revealAnswer(`🎉 ${playerName} 猜对了！`);
+      });
+
+      // drawer 完成画作（主动 / 超时）→ 进入猜阶段
+      channel.on('broadcast', { event: 'draw_finished' }, (payload) => {
+        if (gameMode !== 'guess') return;
+        if (payload.payload && payload.payload.word) guessWord = payload.payload.word;
+        if (roundPhase !== 'guessing') startGuessingPhase();
+      });
+
+      // 猜阶段超时 → 公布答案
+      channel.on('broadcast', { event: 'guess_timeout' }, (payload) => {
+        if (gameMode !== 'guess') return;
+        if (roundPhase !== 'reveal') {
+          if (payload.payload && payload.payload.word) guessWord = payload.payload.word;
+          revealAnswer('时间到，没人猜出来 😶');
+        }
+      });
+
+      // 新一轮开始（drawer 角色换人）
+      channel.on('broadcast', { event: 'round_start' }, (payload) => {
+        if (gameMode !== 'guess') return;
+        const p = payload.payload || {};
+        if (p.word) guessWord = p.word;
+        isDrawer = p.drawerId === myId;
+        if (isDrawer) {
+          currentTool = 'pen';
+          document.getElementById('guessWordDisplay').textContent = `你要画：${guessWord}`;
+          document.getElementById('guessInputGroup').style.display = 'none';
+        } else {
+          currentTool = 'watch';
+          document.getElementById('guessWordDisplay').textContent = '猜猜对方在画什么？';
+          document.getElementById('guessInputGroup').style.display = 'flex';
+          setGuessPlaceholder();
+        }
+        clearCanvasLocal();
+        roundPhase = 'drawing';
+        applyRoleUI();
+        buildCanvas();
+        if (isDrawer) startTimer(DRAW_DURATION, onDrawTimeout);
+      });
+
+      channel.subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          const myCursorColor = COLORS[Math.floor(Math.random() * 8)];
+          await channel.track({ id: myId, name: myName, cursorColor: myCursorColor });
+        }
+      });
+    }
+
+    function updatePlayerList() {
+      const list = document.getElementById('playerList');
+      list.innerHTML = '';
+      for (const [id, data] of Object.entries(players)) {
+        const badge = document.createElement('div');
+        badge.className = 'player-badge';
+        badge.innerHTML = `<span class="dot"></span>${data.name || data}`;
+        list.appendChild(badge);
+      }
+    }
+
+    /* ── Game ── */
+    function startGame() {
+      gameActive = true;
+      // 不在这里清 gridData：buildCanvas() 负责初始化 gridData
+      // (startGame 跑在 buildCanvas 之前，gridData[i] 还是 undefined 会抛错)
+
+      if (gameMode === 'guess') {
+        guessWord = GUESS_WORDS[Math.floor(Math.random() * GUESS_WORDS.length)];
+        const playerIds = Object.keys(players);
+        isDrawer = playerIds[0] === myId;
+        channel.send({ type: 'broadcast', event: 'game_start', payload: { mode: 'guess', word: guessWord, drawerId: playerIds[0] } });
+      } else {
+        channel.send({ type: 'broadcast', event: 'game_start', payload: { mode: 'collab' } });
+      }
+      beginGame();
+    }
+
+    function beginGame() {
+      showScreen('gameScreen');
+      hideTimeoutMask();
+      stopTimer();
+
+      if (gameMode === 'guess') {
+        document.getElementById('guessBar').style.display = 'flex';
+        if (isDrawer) {
+          document.getElementById('guessWordDisplay').textContent = `你要画：${guessWord}`;
+          document.getElementById('guessInputGroup').style.display = 'none';
+        } else {
+          document.getElementById('guessWordDisplay').textContent = '猜猜对方在画什么？';
+          document.getElementById('guessInputGroup').style.display = 'flex';
+          setGuessPlaceholder();
+          currentTool = 'watch';
+        }
+        roundPhase = 'drawing';
+      } else {
+        document.getElementById('guessBar').style.display = 'none';
+        roundPhase = 'collab';
+      }
+
+      applyRoleUI();
+      buildCanvas();
+      buildColorPalette();
+      renderCanvas();
+
+      if (gameMode === 'guess' && isDrawer) {
+        startTimer(DRAW_DURATION, onDrawTimeout);
+      }
+    }
+
+    function buildCanvas() {
+      // 固定 150×100 网格（1200×800 物理像素），两端用同一份坐标，画板永远一致
+      const cols = gridSize.cols;
+      const rows = gridSize.rows;
+      const oldData = gridData;
+      gridData = [];
+      for (let i = 0; i < rows; i++) {
+        gridData[i] = [];
+        for (let j = 0; j < cols; j++) {
+          gridData[i][j] = (oldData[i] && oldData[i][j]) ? oldData[i][j] : '#FFFFFF';
+        }
+      }
+
+      const canvas = document.getElementById('pixelCanvas');
+      canvas.style.gridTemplateColumns = `repeat(${cols}, ${cellSize}px)`;
+      canvas.style.gridTemplateRows = `repeat(${rows}, ${cellSize}px)`;
+      canvas.style.width = `${cols * cellSize}px`;
+      canvas.style.height = `${rows * cellSize}px`;
+
+      // 用 DocumentFragment 一次性挂载 DOM，避免反复重排
+      const frag = document.createDocumentFragment();
+      cells = new Array(rows * cols);
+      for (let i = 0; i < rows; i++) {
+        for (let j = 0; j < cols; j++) {
+          const idx = i * cols + j;
+          const cell = document.createElement('div');
+          cell.className = 'pixel-cell';
+          cell.dataset.row = i;
+          cell.dataset.col = j;
+          cell.style.background = gridData[i][j];
+          cell.addEventListener('pointerdown', (e) => onPointerDown(e, i, j));
+          cell.addEventListener('pointermove', (e) => onPointerMove(e, i, j));
+          cells[idx] = cell;
+          frag.appendChild(cell);
+        }
+      }
+      canvas.innerHTML = '';
+      canvas.appendChild(frag);
+
+      canvas.addEventListener('pointerup', () => { isDrawing = false; });
+      canvas.addEventListener('pointerleave', () => { isDrawing = false; });
+
+      // 物理像素固定 1200×800，按可视窗口缩放（手机端也能装下）
+      fitCanvasToViewport();
+    }
+
+    function fitCanvasToViewport() {
+      const canvas = document.getElementById('pixelCanvas');
+      if (!canvas) return;
+      const area = document.getElementById('canvasArea');
+      const padding = 16; // 上下左右各预留 16px
+      const aw = (area ? area.clientWidth : window.innerWidth) - padding * 2;
+      const ah = (area ? area.clientHeight : window.innerHeight) - padding * 2;
+      if (aw <= 0 || ah <= 0) return;
+      const scale = Math.min(aw / 1200, ah / 800, 1); // 桌面端不放大（最多 1x）
+      canvas.style.transform = `scale(${scale})`;
+    }
+
+    function buildColorPalette() {
+      const palette = document.getElementById('colorPalette');
+      palette.innerHTML = '';
+      COLORS.forEach(color => {
+        const swatch = document.createElement('div');
+        swatch.className = 'color-swatch' + (color === currentColor ? ' active' : '');
+        swatch.style.background = color;
+        swatch.dataset.color = color;
+        swatch.onclick = () => {
+          currentColor = color;
+          currentTool = 'pen';
+          document.querySelectorAll('.color-swatch').forEach(s => s.classList.toggle('active', s.dataset.color === color));
+          document.getElementById('toolPen').classList.add('active');
+          document.getElementById('toolEraser').classList.remove('active');
+        };
+        palette.appendChild(swatch);
+      });
+    }
+
+    function setTool(tool) {
+      currentTool = tool;
+      document.getElementById('toolPen').classList.toggle('active', tool === 'pen');
+      document.getElementById('toolEraser').classList.toggle('active', tool === 'eraser');
+    }
+
+    // ── 角色感知 UI ──
+    function applyRoleUI() {
+      const isGuess = gameMode === 'guess';
+      const showDrawTools = !isGuess || isDrawer;
+      document.getElementById('toolDrawGroup').classList.toggle('hidden', !showDrawTools);
+      document.getElementById('toolColorGroup').classList.toggle('hidden', !showDrawTools);
+      document.getElementById('btnClearCanvas').classList.toggle('hidden', !showDrawTools);
+      document.getElementById('btnFinish').classList.toggle('hidden', !(isGuess && isDrawer));
+      if (!isGuess) {
+        currentTool = (currentTool === 'watch') ? 'pen' : currentTool;
+        document.getElementById('btnFinish').classList.add('hidden');
+      }
+    }
+
+    // ── 倒计时 ──
+    const DRAW_DURATION = 60;
+    const GUESS_DURATION = 60;
+
+    function startTimer(seconds, onTimeout) {
+      stopTimer();
+      timerRemaining = seconds;
+      roundServerStart = Date.now();
+      const pill = document.getElementById('timerPill');
+      const cnt = document.getElementById('timerCount');
+      pill.classList.remove('hidden');
+      cnt.textContent = String(timerRemaining);
+      pill.classList.remove('warn', 'danger');
+      timerHandle = setInterval(() => {
+        timerRemaining -= 1;
+        cnt.textContent = String(Math.max(0, timerRemaining));
+        pill.classList.toggle('warn', timerRemaining <= 20 && timerRemaining > 10);
+        pill.classList.toggle('danger', timerRemaining <= 10);
+        if (timerRemaining <= 0) {
+          stopTimer();
+          onTimeout();
+        }
+      }, 1000);
+    }
+
+    function stopTimer() {
+      if (timerHandle) { clearInterval(timerHandle); timerHandle = null; }
+      const pill = document.getElementById('timerPill');
+      if (pill) pill.classList.add('hidden');
+    }
+
+    // ── 超时 / 答案揭晓遮罩 ──
+    function showTimeoutMask(title, emoji, answer, autoMs) {
+      hideTimeoutMask();
+      const mask = document.createElement('div');
+      mask.className = 'timeout-mask';
+      mask.id = 'timeoutMask';
+      mask.innerHTML = `
+        <div class="emoji">${emoji || '⏰'}</div>
+        <div class="title">${title || '超时'}</div>
+        ${answer ? `<div class="answer">${answer}</div>` : ''}
+        <div class="next-hint">${autoMs ? `${Math.ceil(autoMs/1000)}s 后进入下一题…` : ''}</div>
+      `;
+      document.body.appendChild(mask);
+    }
+    function hideTimeoutMask() {
+      const old = document.getElementById('timeoutMask');
+      if (old) old.remove();
+    }
+
+    // ── 画的人主动「完成」 ──
+    function finishDrawing() {
+      if (gameMode !== 'guess' || !isDrawer) return;
+      stopTimer();
+      channel.send({ type: 'broadcast', event: 'draw_finished', payload: { drawerId: myId, word: guessWord } });
+      startGuessingPhase();
+    }
+
+    // ── pointer 事件 ──
+    function onPointerDown(e, row, col) {
+      if (currentTool === 'watch') return;
+      isDrawing = true;
+      applyPaint(row, col);
+    }
+
+    function onPointerMove(e, row, col) {
+      if (!isDrawing || currentTool === 'watch') return;
+      // 合并 cursor 移动到 paint payload：避免每个像素都发 2 个事件，撑爆 Supabase Realtime 通道
+      applyPaint(row, col, true);
+    }
+
+    function applyPaint(row, col, withCursor) {
+      const color = currentTool === 'eraser' ? '#FFFFFF' : currentColor;
+      gridData[row][col] = color;
+      paintPixelLocal(row, col, color);
+      const payload = { row, col, color, playerId: myId };
+      if (withCursor) payload.cr = { row, col }; // cursor 一起带上
+      channel.send({ type: 'broadcast', event: 'pixel_paint', payload });
+    }
+
+    function paintPixel(row, col, color, isRemote) {
+      gridData[row][col] = color;
+      // 优先用 cells 数组索引（O(1)），fallback 到 querySelector 应对网格重建时序
+      const idx = row * gridSize.cols + col;
+      let cell = cells && cells[idx];
+      if (!cell) {
+        cell = document.querySelector(`.pixel-cell[data-row="${row}"][data-col="${col}"]`);
+        if (cells) cells[idx] = cell || cells[idx];
+      }
+      if (!cell) return;
+      cell.style.background = color;
+      if (isRemote) {
+        cell.classList.add('painted-by-other');
+        setTimeout(() => cell.classList.remove('painted-by-other'), 300);
+      }
+    }
+
+    function paintPixelLocal(row, col, color) {
+      const idx = row * gridSize.cols + col;
+      let cell = cells && cells[idx];
+      if (!cell) {
+        cell = document.querySelector(`.pixel-cell[data-row="${row}"][data-col="${col}"]`);
+        if (cells) cells[idx] = cell || cells[idx];
+      }
+      if (cell) cell.style.background = color;
+    }
+
+    function clearCanvas() {
+      for (let i = 0; i < gridSize.rows; i++) for (let j = 0; j < gridSize.cols; j++) gridData[i][j] = '#FFFFFF';
+      renderCanvas();
+      channel.send({ type: 'broadcast', event: 'canvas_clear', payload: {} });
+    }
+
+    function clearCanvasLocal() {
+      for (let i = 0; i < gridSize.rows; i++) for (let j = 0; j < gridSize.cols; j++) gridData[i][j] = '#FFFFFF';
+      renderCanvas();
+    }
+
+    function renderCanvas() {
+      // 直接走 cells 数组索引，避免 querySelector
+      const cols = gridSize.cols;
+      for (let i = 0; i < gridSize.rows; i++) {
+        const row = gridData[i];
+        const base = i * cols;
+        for (let j = 0; j < cols; j++) {
+          const cell = cells[base + j];
+          if (cell) cell.style.background = row[j];
+        }
+      }
+    }
+
+    // 给猜的人显示"几个字"的提示（用 placeholder）
+    function setGuessPlaceholder() {
+      const input = document.getElementById('guessInput');
+      if (!input) return;
+      const len = (guessWord || '').length;
+      input.placeholder = len > 0 ? `共 ${len} 个字` : '输入你的猜测...';
+    }
+
+    function submitGuess() {
+      const input = document.getElementById('guessInput');
+      const guess = input.value.trim();
+      if (!guess) return;
+      if (guess === guessWord) {
+        channel.send({ type: 'broadcast', event: 'guess_correct', payload: { playerId: myId, playerName: myName, word: guessWord } });
+      } else {
+        input.style.borderColor = 'var(--danger)';
+        setTimeout(() => input.style.borderColor = '', 800);
+      }
+      input.value = '';
+    }
+
+    function startNewRound() {
+      hideTimeoutMask();
+      stopTimer();
+      if (gameMode === 'guess') {
+        isDrawer = !isDrawer;
+        guessWord = GUESS_WORDS[Math.floor(Math.random() * GUESS_WORDS.length)];
+        clearCanvasLocal();
+        roundPhase = 'drawing';
+        if (isDrawer) {
+          currentTool = 'pen';
+          document.getElementById('guessWordDisplay').textContent = `你要画：${guessWord}`;
+          document.getElementById('guessInputGroup').style.display = 'none';
+        } else {
+          currentTool = 'watch';
+          document.getElementById('guessWordDisplay').textContent = '猜猜对方在画什么？';
+          document.getElementById('guessInputGroup').style.display = 'flex';
+          setGuessPlaceholder();
+        }
+        applyRoleUI();
+        buildCanvas();
+        const playerIds = Object.keys(players);
+        const newDrawerId = isDrawer ? myId : playerIds.find(id => id !== myId) || myId;
+        channel.send({ type: 'broadcast', event: 'round_start', payload: { drawerId: newDrawerId, word: guessWord, mode: 'drawing' } });
+        if (isDrawer) startTimer(DRAW_DURATION, onDrawTimeout);
+      }
+    }
+
+    function startGuessingPhase() {
+      roundPhase = 'guessing';
+      hideTimeoutMask();
+      if (isDrawer) {
+        currentTool = 'watch';
+        document.getElementById('guessWordDisplay').textContent = '等待对方猜测…';
+        document.getElementById('guessInputGroup').style.display = 'none';
+      } else {
+        document.getElementById('guessWordDisplay').textContent = '猜猜对方在画什么？';
+        document.getElementById('guessInputGroup').style.display = 'flex';
+        setGuessPlaceholder();
+        document.getElementById('guessInput').focus();
+      }
+      applyRoleUI();
+      startTimer(GUESS_DURATION, onGuessTimeout);
+    }
+
+    function onDrawTimeout() {
+      hideTimeoutMask();
+      if (gameMode !== 'guess' || !isDrawer) return;
+      showTimeoutMask('超时，不能再作画了', '⏰', null, 0);
+      channel.send({ type: 'broadcast', event: 'draw_finished', payload: { drawerId: myId, word: guessWord, reason: 'draw_timeout' } });
+      setTimeout(() => { hideTimeoutMask(); startGuessingPhase(); }, 1500);
+    }
+
+    function onGuessTimeout() {
+      if (gameMode !== 'guess' || roundPhase !== 'guessing') return;
+      revealAnswer('时间到，没人猜出来 😶');
+    }
+
+    function revealAnswer(reasonText) {
+      roundPhase = 'reveal';
+      stopTimer();
+      showTimeoutMask(reasonText || '答案揭晓', '🎬', `答案是：${guessWord}`, 2500);
+      channel.send({ type: 'broadcast', event: 'guess_timeout', payload: { word: guessWord, reason: reasonText } });
+      setTimeout(() => { hideTimeoutMask(); startNewRound(); }, 2500);
+    }
+
+    function backToLobby() {
+      stopTimer();
+      hideTimeoutMask();
+      if (channel) { supabaseClient.removeChannel(channel); channel = null; }
+      players = {}; gameActive = false; pendingStart = false;
+      roundPhase = 'idle';
+      showScreen('lobbyScreen');
+    }
+
+    /* ── Resize ── */
+    let resizeTimer = null;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        if (gameActive) buildCanvas();
+        else fitCanvasToViewport();
+      }, 150);
+    });
+
+    /* ── Init ── */
+    (function prefillAuth() {
+      const remembered = localStorage.getItem('remembered_email');
+      if (remembered) document.getElementById('authEmail').value = remembered;
+    })();
+
+    /* ── 8px 像素动态背景 ── */
+    const BG_SPRITES = {
+      cat: [
+        '0000000000000000','0000000000000000','0011000000001100','0011100000011100',
+        '0011100000011100','0000000000000000','0000111111110000','0001111111111000',
+        '0011111111111100','0111110011111110','0110000011000110','0110000011000110',
+        '0011111111111100','0001111111111000','0000011111100000','0000000000000000',
+      ],
+      fish: [
+        '0000000000000000','0000000000000000','0000000011111100','0000001111111110',
+        '0001111110011110','0011111110000110','0110011110000010','0110000110000010',
+        '0110011110000010','0011111110000110','0001111110011110','0000001111111110',
+        '0000000011111100','0000000000011100','0000000000111000','0000000001110000',
+      ],
+      star: [
+        '0000000001000000','0000000011100000','0000000111110000','0111111111111110',
+        '0011111111111100','0001111111111000','0000111111110000','0000011111100000',
+        '0000011111100000','0000111111110000','0001111111111000','0011111111111100',
+        '0111111111111110','0000000111110000','0000000011100000','0000000001000000',
+      ],
+      moon: [
+        '0000000000111100','0000000011111100','0000001110000000','0000011100000000',
+        '0000111000000000','0001110000000000','0011100000000000','0011100000000000',
+        '0011100000000000','0011100000000000','0001110000000000','0000111000000000',
+        '0000011100000000','0000001110000000','0000000011111100','0000000000111100',
+      ],
+      heart: [
+        '0000000000000000','0001100001100000','0011110011111000','0111111111111110',
+        '1111111111111111','1111111111111111','1111111111111111','0111111111111110',
+        '0011111111111100','0001111111111000','0000111111110000','0000011111100000',
+        '0000001111000000','0000000110000000','0000000000000000','0000000000000000',
+      ],
+      rocket: [
+        '0000000011000000','0000000111100000','0000000111100000','0000001111110000',
+        '0000001111110000','0000001111110000','0000011111111000','0000011111111000',
+        '0000011111111000','0000001111110000','0000000111100000','0000000111100000',
+        '0000011001100000','0000011001100000','0000110000110000','0000000000000000',
+      ],
+      cloud: [
+        '0000000000000000','0000001110000000','0000011111100000','0000111111111000',
+        '0001111111111100','0111111111111110','0111111111111110','0111111111111110',
+        '0111111111111110','0011111111111100','0001111111111000','0000000000000000',
+        '0000000000000000','0000000000000000','0000000000000000','0000000000000000',
+      ],
+      ufo: [
+        '0000000000000000','0000000000000000','0000000111100000','0000011111111000',
+        '0000111111111100','0000011111111000','0011111111111110','0111111111111110',
+        '1111111111111111','0000000000000000','0000110000110000','0000000000000000',
+        '0000000000000000','0000000000000000','0000000000000000','0000000000000000',
+      ],
+    };
+
+    const BG_PALETTE = [
+      'oklch(75% 0.18 200)',
+      'oklch(75% 0.18 330)',
+      'oklch(80% 0.18 80)',
+      'oklch(75% 0.18 150)',
+      'oklch(75% 0.18 270)',
+      'oklch(82% 0.10 60)',
+    ];
+
+    function buildBgSprite(name, color) {
+      const pattern = BG_SPRITES[name];
+      const rows = pattern.length;
+      const cols = pattern[0].length;
+      const wrap = document.createElement('div');
+      wrap.className = 'bg-sprite';
+      wrap.style.setProperty('--cols', cols);
+      wrap.style.setProperty('--rows', rows);
+      wrap.style.color = color;
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const px = document.createElement('div');
+          px.className = 'px' + (pattern[r][c] === '1' ? ' on' : '');
+          wrap.appendChild(px);
+        }
+      }
+      return wrap;
+    }
+
+    function buildBgStripes() {
+      for (const pos of ['top: 0', 'bottom: 0']) {
+        const strip = document.createElement('div');
+        strip.className = 'bg-tile-strip';
+        strip.style.cssText = pos;
+        const count = Math.ceil(window.innerWidth / 8) + 4;
+        for (let i = 0; i < count; i++) {
+          const t = document.createElement('div');
+          t.className = 'pxt';
+          t.style.animationDelay = `${(i * 37) % 1000}ms`;
+          strip.appendChild(t);
+        }
+        document.body.appendChild(strip);
+      }
+    }
+
+    function buildBg() {
+      const layer = document.getElementById('bgPixelLayer');
+      if (!layer) return;
+      const spriteNames = Object.keys(BG_SPRITES);
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const spriteCount = 14;
+      for (let i = 0; i < spriteCount; i++) {
+        const name = spriteNames[Math.floor(Math.random() * spriteNames.length)];
+        const color = BG_PALETTE[Math.floor(Math.random() * BG_PALETTE.length)];
+        const sprite = buildBgSprite(name, color);
+        const x = Math.random() * (vw - 130);
+        const y = Math.random() * (vh - 130);
+        sprite.style.left = `${x}px`;
+        sprite.style.top = `${y}px`;
+        sprite.style.setProperty('--dur', `${18 + Math.random() * 18}s`);
+        sprite.style.animationDelay = `${-Math.random() * 24}s`;
+        layer.appendChild(sprite);
+      }
+      buildBgStripes();
+    }
+
+    buildBg();
+    let bgResizeTimer = null;
+    window.addEventListener('resize', () => {
+      clearTimeout(bgResizeTimer);
+      bgResizeTimer = setTimeout(() => {
+        const layer = document.getElementById('bgPixelLayer');
+        if (layer) layer.innerHTML = '';
+        document.querySelectorAll('.bg-tile-strip').forEach(el => el.remove());
+        buildBg();
+      }, 200);
+    });
+  </script>
+
+  <script>
+  (function() {
+    'use strict';
+    var canvas = document.getElementById('bgCanvas');
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+    var W = 0, H = 0, dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var CELL = 40;
+    var cols = 0, rows = 0;
+    var METEOR_COLORS = [
+      { r: 120, g: 130, b: 255 },
+      { r: 255, g: 180, b: 90 },
+      { r: 255, g: 120, b: 200 },
+      { r: 100, g: 255, b: 180 },
+      { r: 180, g: 140, b: 255 }
+    ];
+    function resize() {
+      W = window.innerWidth; H = window.innerHeight;
+      canvas.width = W * dpr; canvas.height = H * dpr;
+      canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      cols = Math.ceil(W / CELL) + 1; rows = Math.ceil(H / CELL) + 1;
+    }
+    function drawGrid() {
+      ctx.strokeStyle = 'rgba(110, 120, 200, 0.2)'; ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (var i = 0; i <= cols; i++) { var x = i * CELL; ctx.moveTo(x, 0); ctx.lineTo(x, H); }
+      for (var j = 0; j <= rows; j++) { var y = j * CELL; ctx.moveTo(0, y); ctx.lineTo(W, y); }
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(120, 130, 255, 0.3)';
+      for (var i2 = 0; i2 <= cols; i2++) for (var j2 = 0; j2 <= rows; j2++) ctx.fillRect(i2 * CELL - 0.5, j2 * CELL - 0.5, 1, 1);
+    }
+    function Meteor() {
+      this.horizontal = Math.random() > 0.5;
+      var c = METEOR_COLORS[Math.floor(Math.random() * METEOR_COLORS.length)];
+      this.r = c.r; this.g = c.g; this.b = c.b;
+      this.speed = 1.5 + Math.random() * 3;
+      this.tailLen = 100 + Math.random() * 180;
+      this.life = 0; this.maxLife = 200 + Math.random() * 300;
+      this.thickness = 1.5 + Math.random() * 1.5;
+      if (this.horizontal) {
+        this.row = Math.floor(Math.random() * rows);
+        this.y = this.row * CELL + CELL / 2;
+        this.reverse = Math.random() > 0.5;
+        this.x = this.reverse ? W + 50 : -50;
+        this.vx = this.reverse ? -this.speed : this.speed; this.vy = 0;
+      } else {
+        this.col = Math.floor(Math.random() * cols);
+        this.x = this.col * CELL + CELL / 2;
+        this.reverse = Math.random() > 0.5;
+        this.y = this.reverse ? H + 50 : -50;
+        this.vx = 0; this.vy = this.reverse ? -this.speed : this.speed;
+      }
+    }
+    Meteor.prototype.alpha = function() {
+      var fadeIn = 40, fadeOut = 80;
+      if (this.life < fadeIn) return this.life / fadeIn;
+      if (this.life > this.maxLife - fadeOut) return Math.max(0, (this.maxLife - this.life) / fadeOut);
+      return 1;
+    };
+    Meteor.prototype.update = function() {
+      this.life++; this.x += this.vx; this.y += this.vy;
+      if (this.horizontal) {
+        if (this.reverse && this.x < -this.tailLen) return false;
+        if (!this.reverse && this.x > W + this.tailLen) return false;
+      } else {
+        if (this.reverse && this.y < -this.tailLen) return false;
+        if (!this.reverse && this.y > H + this.tailLen) return false;
+      }
+      if (this.life > this.maxLife) return false;
+      return true;
+    };
+    Meteor.prototype.draw = function() {
+      var a = this.alpha(); if (a <= 0) return;
+      var c = this.r + ', ' + this.g + ', ' + this.b;
+      var tx = this.x - this.vx * (this.tailLen / this.speed);
+      var ty = this.y - this.vy * (this.tailLen / this.speed);
+      var grad = ctx.createLinearGradient(this.x, this.y, tx, ty);
+      grad.addColorStop(0, 'rgba(' + c + ', ' + (0.9 * a) + ')');
+      grad.addColorStop(0.3, 'rgba(' + c + ', ' + (0.4 * a) + ')');
+      grad.addColorStop(1, 'rgba(' + c + ', 0)');
+      ctx.strokeStyle = grad; ctx.lineWidth = this.thickness; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(this.x, this.y); ctx.lineTo(tx, ty); ctx.stroke();
+      ctx.shadowColor = 'rgba(' + c + ', ' + a + ')'; ctx.shadowBlur = 16;
+      ctx.fillStyle = 'rgba(' + c + ', ' + a + ')';
+      ctx.beginPath(); ctx.arc(this.x, this.y, this.thickness * 1.5, 0, Math.PI * 2); ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = 'rgba(255, 255, 255, ' + (0.7 * a) + ')';
+      ctx.beginPath(); ctx.arc(this.x, this.y, this.thickness * 0.6, 0, Math.PI * 2); ctx.fill();
+    };
+    var meteors = []; var MAX_METEORS = 60; var spawnCooldown = 0;
+    function spawnMeteor() { if (meteors.length < MAX_METEORS) meteors.push(new Meteor()); }
+    function loop() {
+      ctx.clearRect(0, 0, W, H); drawGrid();
+      meteors = meteors.filter(function(m) { var alive = m.update(); if (alive) m.draw(); return alive; });
+      if (spawnCooldown <= 0 && meteors.length < MAX_METEORS) { spawnMeteor(); spawnCooldown = 20 + Math.random() * 100; }
+      spawnCooldown--;
+      if (meteors.length === 0) { spawnMeteor(); spawnMeteor(); }
+      requestAnimationFrame(loop);
+    }
+    resize(); window.addEventListener('resize', resize);
+    for (var i = 0; i < 8; i++) spawnMeteor();
+    loop();
+  })();
+  </script>
+</body>
+</html>
