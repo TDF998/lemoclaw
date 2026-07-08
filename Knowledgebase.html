@@ -6,20 +6,6 @@
     <title>Lemo Claw生态知识库</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-     <head>
-        <!-- 基础 favicon -->
-        <link rel="icon" type="image/svg+xml" href="icon/favicon.svg">
-        <link rel="icon" type="image/x-icon" href="icon/favicon.ico">
-        <link rel="icon" href="icon/favicon.svg" type="image/svg+xml" sizes="16x16">
-        <link rel="icon" href="icon/favicon.svg" type="image/svg+xml" sizes="32x32">
-        <link rel="icon" href="icon/favicon.svg" type="image/svg+xml" sizes="64x64">
-      
-        <!-- 苹果 Touch Icon（Safari/添加到主屏幕） -->
-        <link rel="apple-touch-svg" href="icon/favicon.svg">
-      
-        <!-- PWA 安卓图标 -->
-        <link rel="manifest" href="icon/favicon.svg">
-      </head>
     <style>
         * {
             margin: 0;
@@ -27,12 +13,91 @@
             box-sizing: border-box;
         }
 
+        html {
+            background: #05070C;
+        }
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #0A0C12, #121621);
+            background: transparent;
             color: #EDF2F9;
             line-height: 1.5;
             scroll-behavior: smooth;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* ========== 背景微网格 ========== */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            mask-image: radial-gradient(ellipse 80% 80% at 50% 30%, black 30%, transparent 70%);
+            -webkit-mask-image: radial-gradient(ellipse 80% 80% at 50% 30%, black 30%, transparent 70%);
+        }
+
+        /* ========== 背景三个渐变光球 ========== */
+        .bg-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(140px);
+            opacity: 0.55;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .bg-orb-1 {
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(240, 101, 67, 0.9) 0%, rgba(240, 101, 67, 0.3) 40%, transparent 70%);
+            top: -20%;
+            left: -12%;
+            animation: orbFloat1 14s ease-in-out infinite;
+        }
+        .bg-orb-2 {
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(80, 120, 255, 0.8) 0%, rgba(80, 120, 255, 0.25) 40%, transparent 70%);
+            top: 30%;
+            right: -12%;
+            animation: orbFloat2 18s ease-in-out infinite;
+        }
+        .bg-orb-3 {
+            width: 440px;
+            height: 440px;
+            background: radial-gradient(circle, rgba(160, 100, 240, 0.75) 0%, rgba(160, 100, 240, 0.2) 40%, transparent 70%);
+            bottom: -15%;
+            left: 25%;
+            animation: orbFloat3 16s ease-in-out infinite;
+        }
+
+        @keyframes orbFloat1 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(80px, 60px) scale(1.08); }
+            50% { transform: translate(30px, -40px) scale(0.94); }
+            75% { transform: translate(-50px, 20px) scale(1.05); }
+        }
+        @keyframes orbFloat2 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(-70px, -50px) scale(1.06); }
+            50% { transform: translate(40px, 70px) scale(0.92); }
+            75% { transform: translate(-20px, -30px) scale(1.04); }
+        }
+        @keyframes orbFloat3 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(60px, -70px) scale(1.07); }
+            50% { transform: translate(-50px, 30px) scale(0.95); }
+            75% { transform: translate(20px, 50px) scale(1.03); }
+        }
+
+        /* 确保主要内容在光球之上 */
+        .navbar, main, .footer {
+            position: relative;
+            z-index: 1;
         }
 
         ::-webkit-scrollbar {
@@ -58,7 +123,7 @@
             padding: 18px 0;
             border-bottom: 1px solid #1A1F2E;
             backdrop-filter: blur(12px);
-            background: rgba(5, 7, 12, 0.7);
+            background: rgba(5, 7, 12, 0.92);
             position: sticky;
             top: 0;
             z-index: 1000;
@@ -142,10 +207,37 @@
             cursor: pointer;
             transition: 0.2s;
             box-shadow: 0 4px 12px rgba(45, 156, 219, 0.3);
+            position: relative;
+            overflow: hidden;
         }
         .btn-primary:hover {
             transform: translateY(-2px);
             filter: brightness(1.05);
+        }
+
+        /* ========== CTA 微光扫过动画 ========== */
+        .btn-primary::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -75%;
+            width: 50%;
+            height: 200%;
+            background: linear-gradient(
+                90deg,
+                transparent 0%,
+                rgba(255, 255, 255, 0.08) 30%,
+                rgba(255, 255, 255, 0.3) 50%,
+                rgba(255, 255, 255, 0.08) 70%,
+                transparent 100%
+            );
+            transform: skewX(-25deg);
+            animation: shimmer 2.8s ease-in-out infinite;
+            pointer-events: none;
+        }
+        @keyframes shimmer {
+            0% { left: -75%; }
+            100% { left: 125%; }
         }
 
         /* 移动端汉堡菜单 + 遮罩 (自适应) */
@@ -252,16 +344,27 @@
 
         /* Hero区域 */
         .hero {
-            padding: 70px 0 40px;
+            padding: 50px 0 30px;
             text-align: center;
         }
         .hero h1 {
-            font-size: 56px;
+            font-size: 48px;
             font-weight: 800;
             background: linear-gradient(135deg, #FFFFFF, #8FCBFF);
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
+        }
+
+        /* ========== 滚动渐显 · 淡入上浮 ========== */
+        .reveal {
+            opacity: 0;
+            transform: translateY(40px);
+            transition: opacity 0.7s cubic-bezier(0.22, 0.61, 0.36, 1), transform 0.7s cubic-bezier(0.22, 0.61, 0.36, 1);
+        }
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
         }
         .hero p {
             font-size: 18px;
@@ -337,11 +440,12 @@
             border: 1px solid #242A42;
             border-radius: 28px;
             padding: 24px;
-            transition: all 0.25s;
+            transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.25s, box-shadow 0.25s;
         }
         .content-card:hover {
             border-color: #2D9CDB;
-            transform: translateY(-4px);
+            transform: translateY(-6px) scale(1.02);
+            box-shadow: 0 20px 30px -15px rgba(0,0,0,0.6);
         }
         .card-tag {
             display: inline-block;
@@ -471,6 +575,11 @@
     </style>
 </head>
 <body>
+    <!-- 背景三个渐变光球 -->
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+    <div class="bg-orb bg-orb-3"></div>
+
     <div class="menu-overlay" id="menuOverlay"></div>
 <div class="navbar">
     <div class="container nav-inner">
@@ -496,27 +605,27 @@
 
 <main>
     <div class="container">
-        <div class="hero">
+        <div class="hero reveal">
             <h1>LemoClaw 第一知识库</h1>
             <p>教程 · 问答 · 资源 | 从入门到生态贡献者，一站式解决 Claw 自动化难题</p>
             <div class="search-bar">
                 <input type="text" placeholder="搜索教程、问答或资源..." id="searchInput">
-                <button id="searchBtn"><i class="fas fa-search"></i> 搜索</button>
+                <button id="searchBtn"><i class="fas fa-search"></i> 搜一下</button>
             </div>
         </div>
 
         <!-- 教程库分类模块 -->
-        <div class="section-title"><i class="fas fa-book-open"></i> 精选教程</div>
-        <div class="cat-tabs" id="tutorialTabs">
+        <div class="section-title reveal"><i class="fas fa-book-open"></i> 精选教程</div>
+        <div class="cat-tabs reveal" id="tutorialTabs">
             <div data-type="all" class="cat-tab active">全部</div>
             <div data-type="入门" class="cat-tab">🚀 入门教程</div>
             <div data-type="进阶" class="cat-tab">⚙️ 进阶开发</div>
             <div data-type="场景" class="cat-tab">🎯 场景实战</div>
         </div>
-        <div class="cards-grid" id="tutorialsGrid"></div>
+        <div class="cards-grid reveal" id="tutorialsGrid"></div>
 
         <!-- 问答社区预览区块 -->
-        <div class="qa-section">
+        <div class="qa-section reveal">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap:wrap; margin-bottom: 20px;">
                 <h2 style="font-size: 26px;"><i class="fas fa-comments"></i> 热门问答 · AI辅助解答</h2>
                 <button class="btn-outline" id="askQuestionBtn" style="padding:6px 18px;">+ 我要提问</button>
@@ -528,8 +637,8 @@
         </div>
 
         <!-- 资源下载 (免费+付费) -->
-        <div class="section-title"><i class="fas fa-download"></i> 热门资源下载</div>
-        <div class="resource-grid" id="resourcesGrid"></div>
+        <div class="section-title reveal"><i class="fas fa-download"></i> 热门资源下载</div>
+        <div class="resource-grid reveal" id="resourcesGrid"></div>
         <div style="text-align: center; margin-bottom: 30px;">
             <button class="btn-primary" id="creatorCenterBtn"><i class="fas fa-chalkboard-user"></i> 创作者中心 · 发布资源/教程享分成</button>
         </div>
@@ -538,8 +647,8 @@
 
 <div class="footer">
     <div class="container">
-        <p>© 2026 北京乐模科技LemoClaw — 生态第一知识库 | 教程 | 问答 | 插件脚本资源</p>
-        <p style="margin-top: 12px; font-size:12px;">内容导流至插件平台 & SaaS · 流量变现闭环 | 精品教程 + 资源分成丨未来的事业布局丨本网站仅供个人研究项目演示</p>
+        <p>© 2026 LemoClaw 生态第一知识库 | 教程 | 问答 | 插件脚本资源</p>
+        <p style="margin-top: 12px; font-size:12px;">内容导流至插件平台 & SaaS · 流量变现闭环 | 精品教程 + 资源分成</p>
     </div>
 </div>
 
@@ -701,7 +810,26 @@
         renderResources();
         bindEvents();
         initMobileNav();
+        initScrollReveal();
     });
+
+    // ========== 滚动渐显 · Intersection Observer ==========
+    function initScrollReveal() {
+        const revealEls = document.querySelectorAll('.reveal');
+        if (!revealEls.length) return;
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, {
+            threshold: 0.12,
+            rootMargin: '0px 0px -40px 0px'
+        });
+        revealEls.forEach(el => observer.observe(el));
+    }
 </script>
 </body>
 </html>

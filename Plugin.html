@@ -7,20 +7,6 @@
     <!-- Google Fonts & Font Awesome -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-     <head>
-        <!-- 基础 favicon -->
-        <link rel="icon" type="image/svg+xml" href="icon/favicon.svg">
-        <link rel="icon" type="image/x-icon" href="icon/favicon.ico">
-        <link rel="icon" href="icon/favicon.svg" type="image/svg+xml" sizes="16x16">
-        <link rel="icon" href="icon/favicon.svg" type="image/svg+xml" sizes="32x32">
-        <link rel="icon" href="icon/favicon.svg" type="image/svg+xml" sizes="64x64">
-      
-        <!-- 苹果 Touch Icon（Safari/添加到主屏幕） -->
-        <link rel="apple-touch-svg" href="icon/favicon.svg">
-      
-        <!-- PWA 安卓图标 -->
-        <link rel="manifest" href="icon/favicon.svg">
-      </head>
     <!-- 基础样式 -->
     <style>
         * {
@@ -29,13 +15,91 @@
             box-sizing: border-box;
         }
 
+        html {
+            background: #0A0C12;
+        }
         body {
             font-family: 'Inter', sans-serif;
-            background: #0A0C12;
-            background: linear-gradient(135deg, #0A0C12, #121621);
+            background: transparent;
             color: #EFF3F8;
             line-height: 1.5;
             scroll-behavior: smooth;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* ========== 背景微网格 ========== */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            mask-image: radial-gradient(ellipse 80% 80% at 50% 30%, black 30%, transparent 70%);
+            -webkit-mask-image: radial-gradient(ellipse 80% 80% at 50% 30%, black 30%, transparent 70%);
+        }
+
+        /* ========== 背景三个渐变光球 ========== */
+        .bg-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(140px);
+            opacity: 0.55;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .bg-orb-1 {
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(240, 101, 67, 0.9) 0%, rgba(240, 101, 67, 0.3) 40%, transparent 70%);
+            top: -20%;
+            left: -12%;
+            animation: orbFloat1 14s ease-in-out infinite;
+        }
+        .bg-orb-2 {
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(80, 120, 255, 0.8) 0%, rgba(80, 120, 255, 0.25) 40%, transparent 70%);
+            top: 30%;
+            right: -12%;
+            animation: orbFloat2 18s ease-in-out infinite;
+        }
+        .bg-orb-3 {
+            width: 440px;
+            height: 440px;
+            background: radial-gradient(circle, rgba(160, 100, 240, 0.75) 0%, rgba(160, 100, 240, 0.2) 40%, transparent 70%);
+            bottom: -15%;
+            left: 25%;
+            animation: orbFloat3 16s ease-in-out infinite;
+        }
+
+        @keyframes orbFloat1 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(80px, 60px) scale(1.08); }
+            50% { transform: translate(30px, -40px) scale(0.94); }
+            75% { transform: translate(-50px, 20px) scale(1.05); }
+        }
+        @keyframes orbFloat2 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(-70px, -50px) scale(1.06); }
+            50% { transform: translate(40px, 70px) scale(0.92); }
+            75% { transform: translate(-20px, -30px) scale(1.04); }
+        }
+        @keyframes orbFloat3 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(60px, -70px) scale(1.07); }
+            50% { transform: translate(-50px, 30px) scale(0.95); }
+            75% { transform: translate(20px, 50px) scale(1.03); }
+        }
+
+        /* 确保主要内容在光球之上 */
+        .navbar, main, .footer, #app {
+            position: relative;
+            z-index: 1;
         }
 
         /* 自定义滚动条 */
@@ -68,7 +132,7 @@
             backdrop-filter: blur(10px);
             position: sticky;
             top: 0;
-            background: rgba(10, 12, 18, 0.7);
+            background: rgba(10, 12, 18, 0.85);
             z-index: 100;
         }
         .nav-inner {
@@ -163,10 +227,37 @@
             cursor: pointer;
             transition: 0.2s;
             box-shadow: 0 4px 12px rgba(124, 106, 255, 0.3);
+            position: relative;
+            overflow: hidden;
         }
         .btn-primary:hover {
             transform: translateY(-2px);
             filter: brightness(1.05);
+        }
+
+        /* ========== CTA 微光扫过动画 ========== */
+        .btn-primary::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -75%;
+            width: 50%;
+            height: 200%;
+            background: linear-gradient(
+                90deg,
+                transparent 0%,
+                rgba(255, 255, 255, 0.08) 30%,
+                rgba(255, 255, 255, 0.3) 50%,
+                rgba(255, 255, 255, 0.08) 70%,
+                transparent 100%
+            );
+            transform: skewX(-25deg);
+            animation: shimmer 2.8s ease-in-out infinite;
+            pointer-events: none;
+        }
+        @keyframes shimmer {
+            0% { left: -75%; }
+            100% { left: 125%; }
         }
 
         /* Hero 区域 */
@@ -174,9 +265,21 @@
             padding: 70px 0 40px;
             text-align: center;
         }
+
+        /* ========== 滚动渐显 · 淡入上浮 ========== */
+        .reveal {
+            opacity: 0;
+            transform: translateY(40px);
+            transition: opacity 0.7s cubic-bezier(0.22, 0.61, 0.36, 1), transform 0.7s cubic-bezier(0.22, 0.61, 0.36, 1);
+        }
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
         .hero h1 {
-            font-size: 56px;
-            font-weight: 800;
+            font-size: 52px;
+            font-weight: 700;
             letter-spacing: -1px;
             background: linear-gradient(to right, #FFFFFF, #B1C2FF);
             -webkit-background-clip: text;
@@ -256,10 +359,10 @@
             border: 1px solid #202433;
             border-radius: 28px;
             padding: 24px;
-            transition: transform 0.2s, border-color 0.2s;
+            transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.25s, box-shadow 0.25s;
         }
         .plugin-card:hover {
-            transform: translateY(-5px);
+            transform: translateY(-8px) scale(1.02);
             border-color: #3E4A9F;
             box-shadow: 0 20px 30px -12px rgba(0,0,0,0.5);
         }
@@ -563,6 +666,11 @@
     </style>
 </head>
 <body>
+    <!-- 背景三个渐变光球 -->
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+    <div class="bg-orb bg-orb-3"></div>
+
     <!-- 遮罩层，放在 navbar 外部，body 内部 -->
 <div class="menu-overlay" id="menuOverlay"></div>
 
@@ -595,7 +703,7 @@
 
     <main class="container">
         <!-- Hero 搜索区 -->
-        <div class="hero">
+        <div class="hero reveal">
             <h1>LemoClaw 插件市场</h1>
             <p>发现、安装、分享强大的插件 · 扩展 OpenClaw 无限可能<br>官方未覆盖场景的「补充性需求」一站解决</p>
             <div class="search-bar">
@@ -605,7 +713,7 @@
         </div>
 
         <!-- 分类筛选区域 -->
-        <div class="categories" id="categoryFilter">
+        <div class="categories reveal" id="categoryFilter">
             <div data-cat="all" class="cat-item active">全部插件</div>
             <div data-cat="效率办公" class="cat-item">📊 效率办公</div>
             <div data-cat="内容创作" class="cat-item">✍️ 内容创作</div>
@@ -613,12 +721,12 @@
         </div>
 
         <!-- 插件网格渲染 -->
-        <div class="plugins-grid" id="pluginsGrid">
+        <div class="plugins-grid reveal" id="pluginsGrid">
             <!-- 动态JS渲染 -->
         </div>
 
         <!-- 开发者激励区 -->
-        <div class="dev-section">
+        <div class="dev-section reveal">
             <i class="fas fa-code-branch" style="font-size: 42px; color:#7C6AFF; margin-bottom: 16px; display: inline-block;"></i>
             <h2>构建 LemoClaw 生态 · 成为贡献者</h2>
             <p style="max-width: 600px; margin: 12px auto;">上传您的插件，获取下载收益与影响力。轻量审核，一键上架，让全球开发者使用您的作品。</p>
@@ -636,8 +744,8 @@
 
     <div class="footer">
         <div class="container">
-            <p>© 2026 北京乐模科技LemoClaw — 插件生态平台 · 助力开源AI工具链 · 让插件触手可及</p>
-            <p style="margin-top: 12px; font-size:12px;">对接 OpenClaw 官方接口 | 一键安装/卸载/更新 | 本地化场景扩展丨未来的事业布局丨本网站仅供个人研究项目演示</p>
+            <p>© 2026 LemoClaw 插件生态平台 · 助力开源AI工具链 · 让插件触手可及</p>
+            <p style="margin-top: 12px; font-size:12px;">对接 OpenClaw 官方接口 | 一键安装/卸载/更新 | 本地化场景扩展</p>
         </div>
     </div>
 </div>
@@ -793,44 +901,38 @@
         });
     }
 
-function installHandler(e) {
+    function installHandler(e) {
     e.stopPropagation();
     let pluginRaw = this.getAttribute('data-plugin');
     try {
         const plugin = JSON.parse(pluginRaw);
+
+        // 显示安装提示
+        showToast(`正在安装「${plugin.name}」...`);
         
-        // 插件名称到参数的映射
-        const pluginParamMap = {
-            'Excel 智能处理助手': 'excel',
-            '飞书消息推送器': 'feishu',
-            'AI 文案创作工坊': 'ai-copywriter',
-            '微信对话适配器': 'wechat',
-            '网页内容抓取器': 'web-scraper',
-            'DALL·E 图片生成器': 'dalle',
-            '抖音热点追踪': 'douyin',
-            'PDF 文档解析器': 'pdf-parser'
-        };
-        
-        const pluginParam = pluginParamMap[plugin.name] || '';
-        
+        // 这里是关键：调用你部署在 GitHub 上的安装脚本
+        // 把下面的地址换成你实际的 raw 地址
         const installScriptUrl = 'https://raw.githubusercontent.com/TDF998/lemoclaw/refs/heads/main/install.sh';
         
         // 构造安装命令
-        let installCommand = `curl -fsSL ${installScriptUrl} | bash`;
-        if (pluginParam) {
-            installCommand += ` -s ${pluginParam}`;
-        }
+        const installCommand = `curl -fsSL ${installScriptUrl} | bash`;
         
-        showToast(`正在准备安装「${plugin.name}」...`);
-        
+        // 复制安装命令到剪贴板
         navigator.clipboard.writeText(installCommand).then(() => {
-            showToast(`📋 安装命令已复制！请在终端中粘贴并执行：\n\n${installCommand}\n\n安装完成后，配置文件在 ~/openclaw/plugins/ 目录下`, false, 10000);
+            showToast(`📋 安装命令已复制！请在终端中粘贴并执行：\n${installCommand}`, false, 5000);
         }).catch(() => {
-            showToast(`⚠️ 请手动复制命令到终端执行：\n\n${installCommand}`, true, 12000);
+            // 如果复制失败，显示命令让用户手动复制
+            showToast(`⚠️ 请手动复制命令到终端执行：\n${installCommand}`, true, 8000);
         });
         
+        // 可选：同时在新窗口打开安装指南
+        setTimeout(() => {
+            if (confirm('是否需要查看详细的图文安装指南？')) {
+                window.open('https://lemoclaw.com/install-guide', '_blank');
+            }
+        }, 500);
+        
     } catch(e) {
-        console.error(e);
         showToast("安装失败，请检查网络连接", true);
     }
 }
@@ -936,9 +1038,28 @@ function installHandler(e) {
         initSearch();
         initDevActions();
         addHotStyles();
+        initScrollReveal();
         // 附加背景光晕装饰
         console.log("OpenClaw 插件市场启动 | 核心定位：第三方插件应用商店，支持一键安装部署");
     });
+
+    // ========== 滚动渐显 · Intersection Observer ==========
+    function initScrollReveal() {
+        const revealEls = document.querySelectorAll('.reveal');
+        if (!revealEls.length) return;
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, {
+            threshold: 0.12,
+            rootMargin: '0px 0px -40px 0px'
+        });
+        revealEls.forEach(el => observer.observe(el));
+    }
     // 移动端菜单交互 - 添加到现有 script 中
 function initMobileMenu() {
     const menuToggle = document.getElementById('menuToggle');

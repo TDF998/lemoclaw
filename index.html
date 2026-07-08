@@ -6,20 +6,6 @@
     <title>LemoClaw · AI自动化助手</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <head>
-        <!-- 基础 favicon -->
-        <link rel="icon" type="image/svg+xml" href="icon/favicon.svg">
-        <link rel="icon" type="image/x-icon" href="icon/favicon.ico">
-        <link rel="icon" href="icon/favicon.svg" type="image/svg+xml" sizes="16x16">
-        <link rel="icon" href="icon/favicon.svg" type="image/svg+xml" sizes="32x32">
-        <link rel="icon" href="icon/favicon.svg" type="image/svg+xml" sizes="64x64">
-      
-        <!-- 苹果 Touch Icon（Safari/添加到主屏幕） -->
-        <link rel="apple-touch-svg" href="icon/favicon.svg">
-      
-        <!-- PWA 安卓图标 -->
-        <link rel="manifest" href="icon/favicon.svg">
-      </head>
     <style>
         * {
             margin: 0;
@@ -27,12 +13,91 @@
             box-sizing: border-box;
         }
 
+        html {
+            background: #05070C;
+        }
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #0A0C12, #121621);
+            background: transparent;
             color: #EDF2F9;
             line-height: 1.5;
             scroll-behavior: smooth;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* ========== 背景微网格 ========== */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 50px 50px;
+            mask-image: radial-gradient(ellipse 80% 80% at 50% 30%, black 30%, transparent 70%);
+            -webkit-mask-image: radial-gradient(ellipse 80% 80% at 50% 30%, black 30%, transparent 70%);
+        }
+
+        /* ========== 背景三个渐变光球 ========== */
+        .bg-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(140px);
+            opacity: 0.55;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .bg-orb-1 {
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(240, 101, 67, 0.9) 0%, rgba(240, 101, 67, 0.3) 40%, transparent 70%);
+            top: -20%;
+            left: -12%;
+            animation: orbFloat1 14s ease-in-out infinite;
+        }
+        .bg-orb-2 {
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(80, 120, 255, 0.8) 0%, rgba(80, 120, 255, 0.25) 40%, transparent 70%);
+            top: 30%;
+            right: -12%;
+            animation: orbFloat2 18s ease-in-out infinite;
+        }
+        .bg-orb-3 {
+            width: 440px;
+            height: 440px;
+            background: radial-gradient(circle, rgba(160, 100, 240, 0.75) 0%, rgba(160, 100, 240, 0.2) 40%, transparent 70%);
+            bottom: -15%;
+            left: 25%;
+            animation: orbFloat3 16s ease-in-out infinite;
+        }
+
+        @keyframes orbFloat1 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(80px, 60px) scale(1.08); }
+            50% { transform: translate(30px, -40px) scale(0.94); }
+            75% { transform: translate(-50px, 20px) scale(1.05); }
+        }
+        @keyframes orbFloat2 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(-70px, -50px) scale(1.06); }
+            50% { transform: translate(40px, 70px) scale(0.92); }
+            75% { transform: translate(-20px, -30px) scale(1.04); }
+        }
+        @keyframes orbFloat3 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(60px, -70px) scale(1.07); }
+            50% { transform: translate(-50px, 30px) scale(0.95); }
+            75% { transform: translate(20px, 50px) scale(1.03); }
+        }
+
+        /* 确保主要内容在光球之上 */
+        .navbar, main, .footer {
+            position: relative;
+            z-index: 1;
         }
 
         /* 自定义滚动条 */
@@ -59,7 +124,7 @@
             padding: 18px 0;
             border-bottom: 1px solid #1A1F2E;
             backdrop-filter: blur(12px);
-            background: rgba(5, 7, 12, 0.7);
+            background: rgba(5, 7, 12, 0.85);
             position: sticky;
             top: 0;
             z-index: 100;
@@ -142,10 +207,37 @@
             cursor: pointer;
             transition: 0.2s;
             box-shadow: 0 4px 12px rgba(240, 101, 67, 0.4);
+            position: relative;
+            overflow: hidden;
         }
         .btn-primary:hover {
             transform: translateY(-2px);
             filter: brightness(1.05);
+        }
+
+        /* ========== CTA 微光扫过动画 ========== */
+        .btn-primary::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -75%;
+            width: 50%;
+            height: 200%;
+            background: linear-gradient(
+                90deg,
+                transparent 0%,
+                rgba(255, 255, 255, 0.08) 30%,
+                rgba(255, 255, 255, 0.3) 50%,
+                rgba(255, 255, 255, 0.08) 70%,
+                transparent 100%
+            );
+            transform: skewX(-25deg);
+            animation: shimmer 2.8s ease-in-out infinite;
+            pointer-events: none;
+        }
+        @keyframes shimmer {
+            0% { left: -75%; }
+            100% { left: 125%; }
         }
 
         /* Hero 区域 */
@@ -162,6 +254,18 @@
             background-clip: text;
             color: transparent;
         }
+
+        /* ========== 滚动渐显 · 淡入上浮 ========== */
+        .reveal {
+            opacity: 0;
+            transform: translateY(40px);
+            transition: opacity 0.7s cubic-bezier(0.22, 0.61, 0.36, 1), transform 0.7s cubic-bezier(0.22, 0.61, 0.36, 1);
+        }
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
         .hero p {
             font-size: 18px;
             color: #99A4C9;
@@ -198,11 +302,11 @@
             border: 1px solid #22273C;
             border-radius: 32px;
             padding: 28px;
-            transition: all 0.25s;
+            transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.25s, box-shadow 0.25s;
         }
         .template-card:hover {
             border-color: #F06543;
-            transform: translateY(-6px);
+            transform: translateY(-8px) scale(1.02);
             box-shadow: 0 20px 30px -15px rgba(0,0,0,0.6);
         }
         .card-icon {
@@ -253,7 +357,7 @@
             font-weight: 600;
             color: #DBE3FF;
             cursor: pointer;
-            transition: 0.2s;
+            transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.25s;
         }
         .use-btn:hover {
             background: #F06543;
@@ -553,6 +657,11 @@
     </style>
 </head>
 <body>
+    <!-- 背景三个渐变光球 -->
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+    <div class="bg-orb bg-orb-3"></div>
+
     <!-- 遮罩层-->
     <div class="menu-overlay" id="menuOverlay"></div>
 <div class="navbar">
@@ -582,7 +691,7 @@
 <main>
     <div class="container">
         <!-- Hero 主视觉 -->
-        <div class="hero">
+        <div class="hero reveal">
             <h1>不用写代码，也能做自动化</h1>
             <p>拖拽搭建自动化流程 · 基于 OpenClaw 引擎，让 AI 帮你处理 Excel、写文案、抓网页<br>零门槛，普通职场人也能秒变效率高手</p>
             <div class="cta-buttons">
@@ -592,15 +701,15 @@
         </div>
 
         <!-- 场景化模板区块 (办公/创作/生活) -->
-        <div class="section-title">🔥 开箱即用的场景模板</div>
-        <div class="section-sub">覆盖职场、自媒体、生活高频场景，一键启动自动化</div>
+        <div class="section-title reveal">🔥 开箱即用的场景模板</div>
+        <div class="section-sub reveal">覆盖职场、自媒体、生活高频场景，一键启动自动化</div>
         
-        <div class="templates-grid" id="templatesGrid">
+        <div class="templates-grid reveal" id="templatesGrid">
             <!-- 动态js生成模板卡片，但直接静态填充并混合动态事件 -->
         </div>
 
         <!-- 可视化编辑器概念展示 -->
-        <div class="editor-preview">
+        <div class="editor-preview reveal">
             <div class="editor-header">
                 <span class="drag-badge"><i class="fas fa-arrows-alt"></i> 拖拽式编辑器 · 无需代码</span>
                 <button class="btn-primary" id="createFlowBtn" style="padding: 8px 20px; font-size: 13px;"><i class="fas fa-plus-circle"></i> 新建自动化流程</button>
@@ -627,9 +736,9 @@
         </div>
 
         <!-- 会员体系 / 定价 -->
-        <div class="section-title" id="pricing">🎯 选择适合你的方案</div>
-        <div class="section-sub">免费版即可体验核心自动化，会员解锁无限可能</div>
-        <div class="pricing">
+        <div class="section-title reveal" id="pricing">🎯 选择适合你的方案</div>
+        <div class="section-sub reveal">免费版即可体验核心自动化，会员解锁无限可能</div>
+        <div class="pricing reveal">
             <div class="plan">
                 <h3>免费版</h3>
                 <div class="price">¥0 <small>/ 永久</small></div>
@@ -643,7 +752,7 @@
             </div>
             <div class="plan popular">
                 <div style="background:#F06543; display:inline-block; padding:2px 12px; border-radius:40px; font-size:12px;">🔥 最受欢迎</div>
-                <h3>LemoClaw Pro</h3>
+                <h3>ClawBuddy Pro</h3>
                 <div class="price">¥9.9 <small>/ 月</small></div>
                 <ul class="feature-list">
                     <li><i class="fas fa-check-circle" style="color:#FF8C5A;"></i> 全部高级模板 (20+)</li>
@@ -672,8 +781,8 @@
 
 <div class="footer">
     <div class="container">
-        <p>© 2026 北京乐模科技LemoClaw — 让 AI 自动化触手可及，人人都是效率专家</p>
-        <p style="margin-top: 12px; font-size: 12px;">基于 OpenClaw 引擎 | 可视化拖拽 | 云同步 | 会员体系 9.9/月起丨未来的事业布局丨本网站仅供个人研究项目演示</p>
+        <p>© 2026 LemoClaw — 让 AI 自动化触手可及，人人都是效率专家</p>
+        <p style="margin-top: 12px; font-size: 12px;">基于 OpenClaw 引擎 | 可视化拖拽 | 云同步 | 会员体系 9.9/月起</p>
     </div>
 </div>
 
@@ -742,7 +851,7 @@
     function initInteractions() {
         const openEditor = document.getElementById('openEditorBtn');
         const createFlow = document.getElementById('createFlowBtn');
-        const startFree = document.getElementById('');
+        const startFree = document.getElementById('startFreeBtn');
         const proSub = document.getElementById('proSubscribeBtn');
         const contactSales = document.getElementById('contactSales');
         const viewDemo = document.getElementById('viewDemoBtn');
@@ -750,17 +859,18 @@
 
         if(openEditor) openEditor.addEventListener('click', () => showToast("🎨 可视化编辑器即将开放内测，拖拽式配置「触发+动作」，一键生成 OpenClaw 脚本", false));
         if(createFlow) createFlow.addEventListener('click', () => showToast("✨ 新建自动化流程: 选择触发条件（定时/文件/邮件） + 执行动作（AI/Excel/通知），无需代码", false));
-        if(startFree) startFree.addEventListener('click', () => {window.location.href = './games/index.html';});
+        if(startFree) startFree.addEventListener('click', () => showToast("🎉 免费版已激活，可体验 5 个基础模板，每日 80 次执行，立即开始自动化之旅", false));
         if(proSub) proSub.addEventListener('click', () => showToast("🔥 升级 ClawBuddy Pro · 9.9/月，解锁无限次数+高级模板，支持支付宝/微信支付 (模拟演示)", false));
         if(contactSales) contactSales.addEventListener('click', () => showToast("📩 企业定制方案: 专属插件开发 + 私有化 OpenClaw 部署，请联系 sales@clawbuddy.com", false));
         if(viewDemo) viewDemo.addEventListener('click', () => showToast("📺 演示视频: 0代码搭建邮件自动回复 & Excel 报表自动化，点击下方链接观看完整教程", false));
+        // if(loginBtn) loginBtn.addEventListener('click', () => showToast("🔐 登录后可保存自动化模板，多端同步，体验云端执行 (支持 Google/GitHub 登录)", false));
         if(loginBtn) {
             loginBtn.addEventListener('click', function(e) {
-                e.preventDefault(); 
-                window.location.href = 'TDFChat.html';
-            });
+            e.preventDefault(); // 阻止默认行为（如果有）
+            window.location.href = 'TDFChat.html';
+        });
         }
-                
+        
         // 免费试用按钮跳转
         const freeStartBtns = document.querySelectorAll('.free-start');
         freeStartBtns.forEach(btn => btn.addEventListener('click', () => {
@@ -838,7 +948,28 @@ document.addEventListener('DOMContentLoaded', () => {
         renderTemplates();
         initInteractions();
         addExtraEffects();
+        initScrollReveal();
     });
+
+    // ========== 滚动渐显 · Intersection Observer ==========
+    function initScrollReveal() {
+        const revealEls = document.querySelectorAll('.reveal');
+        if (!revealEls.length) return;
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, {
+            threshold: 0.12,
+            rootMargin: '0px 0px -40px 0px'
+        });
+
+        revealEls.forEach(el => observer.observe(el));
+    }
 </script>
 </body>
 </html>
