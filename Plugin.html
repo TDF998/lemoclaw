@@ -7,291 +7,41 @@
     <!-- Google Fonts & Font Awesome -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <!-- 基础样式 -->
+    <!-- 公共样式 -->
+    <link rel="stylesheet" href="css/common.css">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        :root {
+            /* 插件平台主题色（紫） */
+            --brand: #7C6AFF;
+            --brand-2: #4F6BF0;
+            --accent: #B9C7FF;
+            --brand-glow: rgba(124, 106, 255, 0.3);
+            --card-hover: #3E4A9F;
+            --nav-bg: rgba(10, 12, 18, 0.85);
+            --nav-border: #1F2436;
+            --nav-z: 100;
+            --nav-link: #CDD9FF;
+            --badge-bg: #1F2937;
+            --bg-html: #0A0C12;
+            --text: #EFF3F8;
+            --muted: #9AA4BF;
+            --grid-alpha: 0.03;
+            --logo-text-grad: linear-gradient(to right, #FFFFFF, #B6C4FF);
+            --hero-text-grad: linear-gradient(to right, #FFFFFF, #B1C2FF);
         }
 
-        html {
-            background: #0A0C12;
-        }
-        body {
-            font-family: 'Inter', sans-serif;
-            background: transparent;
-            color: #EFF3F8;
-            line-height: 1.5;
-            scroll-behavior: smooth;
-            overflow-x: hidden;
-            position: relative;
-        }
-
-        /* ========== 背景微网格 ========== */
-        body::before {
-            content: '';
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            z-index: 0;
-            background-image:
-                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-            background-size: 50px 50px;
-            mask-image: radial-gradient(ellipse 80% 80% at 50% 30%, black 30%, transparent 70%);
-            -webkit-mask-image: radial-gradient(ellipse 80% 80% at 50% 30%, black 30%, transparent 70%);
-        }
-
-        /* ========== 背景三个渐变光球 ========== */
-        .bg-orb {
-            position: fixed;
-            border-radius: 50%;
-            filter: blur(140px);
-            opacity: 0.55;
-            pointer-events: none;
-            z-index: 0;
-        }
-        .bg-orb-1 {
-            width: 600px;
-            height: 600px;
-            background: radial-gradient(circle, rgba(240, 101, 67, 0.9) 0%, rgba(240, 101, 67, 0.3) 40%, transparent 70%);
-            top: -20%;
-            left: -12%;
-            animation: orbFloat1 14s ease-in-out infinite;
-        }
-        .bg-orb-2 {
-            width: 500px;
-            height: 500px;
-            background: radial-gradient(circle, rgba(80, 120, 255, 0.8) 0%, rgba(80, 120, 255, 0.25) 40%, transparent 70%);
-            top: 30%;
-            right: -12%;
-            animation: orbFloat2 18s ease-in-out infinite;
-        }
-        .bg-orb-3 {
-            width: 440px;
-            height: 440px;
-            background: radial-gradient(circle, rgba(160, 100, 240, 0.75) 0%, rgba(160, 100, 240, 0.2) 40%, transparent 70%);
-            bottom: -15%;
-            left: 25%;
-            animation: orbFloat3 16s ease-in-out infinite;
-        }
-
-        @keyframes orbFloat1 {
-            0%, 100% { transform: translate(0, 0) scale(1); }
-            25% { transform: translate(80px, 60px) scale(1.08); }
-            50% { transform: translate(30px, -40px) scale(0.94); }
-            75% { transform: translate(-50px, 20px) scale(1.05); }
-        }
-        @keyframes orbFloat2 {
-            0%, 100% { transform: translate(0, 0) scale(1); }
-            25% { transform: translate(-70px, -50px) scale(1.06); }
-            50% { transform: translate(40px, 70px) scale(0.92); }
-            75% { transform: translate(-20px, -30px) scale(1.04); }
-        }
-        @keyframes orbFloat3 {
-            0%, 100% { transform: translate(0, 0) scale(1); }
-            25% { transform: translate(60px, -70px) scale(1.07); }
-            50% { transform: translate(-50px, 30px) scale(0.95); }
-            75% { transform: translate(20px, 50px) scale(1.03); }
-        }
-
-        /* 确保主要内容在光球之上 */
-        .navbar, main, .footer, #app {
-            position: relative;
-            z-index: 1;
-        }
-
-        /* 自定义滚动条 */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #1A1E2A;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #3B4259;
-            border-radius: 8px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #5B6A8C;
-        }
-
-        /* 容器 */
-        .container {
-            max-width: 1280px;
-            margin: 0 auto;
-            padding: 0 32px;
-        }
-
-        /* 头部导航 */
-        .navbar {
-            padding: 18px 0;
-            border-bottom: 1px solid #1F2436;
-            backdrop-filter: blur(10px);
-            position: sticky;
-            top: 0;
-            background: rgba(10, 12, 18, 0.85);
-            z-index: 100;
-        }
-        .nav-inner {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 20px;
-        }
-        .logo-area {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        .logo-icon {
-            background: linear-gradient(135deg, #303652, #1d2133);
-            width: 38px;
-            height: 38px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 1px solid #383e53;
-            font-size: 22px;
-            font-weight: 700;
-            box-shadow: 0 8px 20px rgba(74, 108, 247, 0.3);
-        }
-        .logo-text {
-            font-size: 26px;
-            font-weight: 700;
-            letter-spacing: -0.5px;
-            background: linear-gradient(to right, #FFFFFF, #B6C4FF);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-        }
-        .logo-badge {
-            background: #1F2937;
-            padding: 2px 8px;
-            border-radius: 40px;
-            font-size: 12px;
-            font-weight: 500;
-            color: #B9C7FF;
-        }
-        .nav-links {
-            display: flex;
-            gap: 28px;
-            align-items: center;
-        }
-        .nav-links a {
-            color: #CDD9FF;
-            text-decoration: none;
-            font-weight: 500;
-            font-size: 15px;
-            transition: 0.2s;
-        }
-        .nav-links a:hover, .nav-links a.active {
-            color: #FFFFFF;
-        }
-        .btn-outline-light {
-            border: 1px solid #3E4A6B;
-            background: transparent;
-            padding: 8px 18px;
-            border-radius: 32px;
-            font-weight: 500;
-            font-size: 14px;
-            color: #EFF3F8;
-            transition: 0.2s;
-            cursor: pointer;
-        }
-        .btn-outline {
-            border: 1px solid #3E4A6F;
-            background: transparent;
-            padding: 8px 20px;
-            border-radius: 40px;
-            font-weight: 500;
-            cursor: pointer;
-            color: #EFF3F8;
-        }
-        .btn-outline-light:hover {
-            background: rgba(124, 106, 255, 0.2);
-            border-color: #7C6AFF;
-        }
-        .btn-primary {
-            background: linear-gradient(95deg, #7C6AFF, #4F6BF0);
-            border: none;
-            padding: 8px 20px;
-            border-radius: 32px;
-            font-weight: 600;
-            font-size: 14px;
-            color: white;
-            cursor: pointer;
-            transition: 0.2s;
-            box-shadow: 0 4px 12px rgba(124, 106, 255, 0.3);
-            position: relative;
-            overflow: hidden;
-        }
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            filter: brightness(1.05);
-        }
-
-        /* ========== CTA 微光扫过动画 ========== */
-        .btn-primary::after {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -75%;
-            width: 50%;
-            height: 200%;
-            background: linear-gradient(
-                90deg,
-                transparent 0%,
-                rgba(255, 255, 255, 0.08) 30%,
-                rgba(255, 255, 255, 0.3) 50%,
-                rgba(255, 255, 255, 0.08) 70%,
-                transparent 100%
-            );
-            transform: skewX(-25deg);
-            animation: shimmer 2.8s ease-in-out infinite;
-            pointer-events: none;
-        }
-        @keyframes shimmer {
-            0% { left: -75%; }
-            100% { left: 125%; }
-        }
-
-        /* Hero 区域 */
+        /* ===== 插件平台专属样式 ===== */
         .hero {
             padding: 70px 0 40px;
-            text-align: center;
         }
-
-        /* ========== 滚动渐显 · 淡入上浮 ========== */
-        .reveal {
-            opacity: 0;
-            transform: translateY(40px);
-            transition: opacity 0.7s cubic-bezier(0.22, 0.61, 0.36, 1), transform 0.7s cubic-bezier(0.22, 0.61, 0.36, 1);
-        }
-        .reveal.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
         .hero h1 {
             font-size: 52px;
-            font-weight: 700;
             letter-spacing: -1px;
-            background: linear-gradient(to right, #FFFFFF, #B1C2FF);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
         }
         .hero p {
-            font-size: 18px;
-            color: #9AA4BF;
-            max-width: 680px;
             margin: 20px auto 32px;
         }
+
         .search-bar {
             max-width: 560px;
             margin: 0 auto;
@@ -343,7 +93,7 @@
         }
         .cat-item.active, .cat-item:hover {
             background: #252B3F;
-            border-color: #7C6AFF;
+            border-color: var(--brand);
             color: white;
         }
 
@@ -363,7 +113,7 @@
         }
         .plugin-card:hover {
             transform: translateY(-8px) scale(1.02);
-            border-color: #3E4A9F;
+            border-color: var(--card-hover);
             box-shadow: 0 20px 30px -12px rgba(0,0,0,0.5);
         }
         .card-header {
@@ -428,7 +178,7 @@
             font-size: 14px;
         }
         .install-btn:hover {
-            background: #7C6AFF;
+            background: var(--brand);
             color: white;
             box-shadow: 0 4px 12px rgba(124,106,255,0.4);
         }
@@ -454,203 +204,22 @@
             flex-wrap: wrap;
         }
 
-        /* 页脚 */
-        .footer {
-            border-top: 1px solid #181E2C;
-            padding: 40px 0;
-            text-align: center;
-            color: #6C738F;
-            font-size: 14px;
-        }
-
-        /* 安装toast模拟 */
-        .toast-msg {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #1F2937;
-            backdrop-filter: blur(12px);
-            padding: 12px 28px;
-            border-radius: 60px;
-            color: white;
+        /* 插件平台专属按钮 */
+        .btn-outline-light {
+            border: 1px solid #3E4A6B;
+            background: transparent;
+            padding: 8px 18px;
+            border-radius: 32px;
             font-weight: 500;
-            z-index: 200;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
-            border-left: 4px solid #7C6AFF;
-            pointer-events: none;
-            transition: opacity 0.2s;
+            font-size: 14px;
+            color: #EFF3F8;
+            transition: 0.2s;
+            cursor: pointer;
         }
-
-        /* 手机端导航适配 - 添加到现有样式末尾 */
-
-/* 移动端断点 */
-@media (max-width: 768px) {
-    /* 导航栏容器调整 */
-    .navbar {
-        padding: 12px 0;
-        position: sticky;
-        top: 0;
-        z-index: 1000;
-    }
-    
-    .nav-inner {
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-        position: relative;
-        gap: 12px;
-    }
-    
-    /* Logo 区域调整 */
-    .logo-area {
-        flex-shrink: 0;
-    }
-    
-    .logo-icon {
-        width: 32px;
-        height: 32px;
-        font-size: 18px;
-    }
-    
-    .logo-text {
-        font-size: 20px;
-    }
-    
-    .badge, .logo-badge {
-        font-size: 10px;
-        padding: 2px 8px;
-    }
-    
-    /* 导航链接 - 默认隐藏，改为汉堡菜单 */
-    .nav-links {
-        position: fixed;
-        top: 0;
-        right: -280px;
-        width: 260px;
-        height: 100vh;
-        background: rgba(10, 12, 18, 0.98);
-        backdrop-filter: blur(16px);
-        flex-direction: column;
-        justify-content: flex-start;
-        align-items: flex-start;
-        padding: 80px 24px 24px;
-        gap: 20px;
-        transition: right 0.3s ease;
-        z-index: 1001;
-        border-left: 1px solid #2A2F42;
-        box-shadow: -5px 0 30px rgba(0, 0, 0, 0.5);
-    }
-    
-    .nav-links.active {
-        right: 0;
-    }
-    
-    .nav-links a {
-        font-size: 16px;
-        padding: 8px 0;
-        width: 100%;
-        border-bottom: 1px solid #2A2F42;
-    }
-    
-    .nav-links button {
-        width: 100%;
-        margin-top: 8px;
-    }
-    
-    /* 汉堡菜单按钮 */
-    .menu-toggle {
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        width: 28px;
-        height: 20px;
-        background: transparent;
-        border: none;
-        cursor: pointer;
-        z-index: 1002;
-        position: relative;
-    }
-    
-    .menu-toggle span {
-        width: 100%;
-        height: 2px;
-        background: #EFF3F8;
-        border-radius: 2px;
-        transition: all 0.3s ease;
-    }
-    
-    /* 汉堡菜单动画 - 打开状态 */
-    .menu-toggle.active span:nth-child(1) {
-        transform: translateY(9px) rotate(45deg);
-    }
-    
-    .menu-toggle.active span:nth-child(2) {
-        opacity: 0;
-    }
-    
-    .menu-toggle.active span:nth-child(3) {
-        transform: translateY(-9px) rotate(-45deg);
-    }
-    
-    /* 遮罩层 */
-    .menu-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.5);
-        backdrop-filter: blur(4px);
-        z-index: 1000;
-        opacity: 0;
-        visibility: hidden;
-        transition: all 0.3s ease;
-    }
-    
-    .menu-overlay.active {
-        opacity: 1;
-        visibility: visible;
-    }
-    
-    /* 按钮样式微调 */
-    .nav-links .btn-outline-light,
-    .nav-links .btn-outline {
-        background: rgba(30, 36, 56, 0.9);
-        border: 1px solid #3E4A6B;
-    }
-    
-    .nav-links .btn-primary {
-        background: linear-gradient(95deg, #FF8C5A, #F06543);
-    }
-}
-
-/* 平板设备适配 (769px - 1024px) */
-@media (min-width: 769px) and (max-width: 1024px) {
-    .nav-links {
-        gap: 20px;
-    }
-    
-    .nav-links a {
-        font-size: 14px;
-    }
-    
-    .btn-outline-light, .btn-outline, .btn-primary {
-        padding: 6px 16px;
-        font-size: 13px;
-    }
-}
-
-/* 桌面端默认隐藏汉堡菜单 */
-@media (min-width: 769px) {
-    .menu-toggle {
-        display: none;
-    }
-    
-    .menu-overlay {
-        display: none;
-    }
-}
+        .btn-outline-light:hover {
+            background: rgba(124, 106, 255, 0.2);
+            border-color: #7C6AFF;
+        }
 
         @media (max-width: 700px) {
             .container {
@@ -670,6 +239,8 @@
     <div class="bg-orb bg-orb-1"></div>
     <div class="bg-orb bg-orb-2"></div>
     <div class="bg-orb bg-orb-3"></div>
+
+    <canvas id="meteorCanvas" class="meteor-canvas"></canvas>
 
     <!-- 遮罩层，放在 navbar 外部，body 内部 -->
 <div class="menu-overlay" id="menuOverlay"></div>
@@ -1031,88 +602,17 @@
         // 目前在卡片内显示了下载量及评分 满足筛选热度概念
     }
 
-    // 页面加载完成渲染
+    // 页面加载完成渲染（滚动渐显与移动端菜单由 common.js 统一初始化）
     document.addEventListener('DOMContentLoaded', () => {
         renderPlugins();
         initCategories();
         initSearch();
         initDevActions();
         addHotStyles();
-        initScrollReveal();
         // 附加背景光晕装饰
         console.log("OpenClaw 插件市场启动 | 核心定位：第三方插件应用商店，支持一键安装部署");
     });
-
-    // ========== 滚动渐显 · Intersection Observer ==========
-    function initScrollReveal() {
-        const revealEls = document.querySelectorAll('.reveal');
-        if (!revealEls.length) return;
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('visible');
-                    observer.unobserve(entry.target);
-                }
-            });
-        }, {
-            threshold: 0.12,
-            rootMargin: '0px 0px -40px 0px'
-        });
-        revealEls.forEach(el => observer.observe(el));
-    }
-    // 移动端菜单交互 - 添加到现有 script 中
-function initMobileMenu() {
-    const menuToggle = document.getElementById('menuToggle');
-    const navLinks = document.querySelector('.nav-links');
-    const overlay = document.getElementById('menuOverlay');
-    
-    if (!menuToggle || !navLinks || !overlay) return;
-    
-    function closeMenu() {
-        menuToggle.classList.remove('active');
-        navLinks.classList.remove('active');
-        overlay.classList.remove('active');
-        document.body.style.overflow = '';
-    }
-    
-    function openMenu() {
-        menuToggle.classList.add('active');
-        navLinks.classList.add('active');
-        overlay.classList.add('active');
-        document.body.style.overflow = 'hidden';
-    }
-    
-    menuToggle.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (navLinks.classList.contains('active')) {
-            closeMenu();
-        } else {
-            openMenu();
-        }
-    });
-    
-    overlay.addEventListener('click', closeMenu);
-    
-    // 点击导航链接后自动关闭菜单
-    const navItems = navLinks.querySelectorAll('a, button');
-    navItems.forEach(item => {
-        item.addEventListener('click', () => {
-            closeMenu();
-        });
-    });
-    
-    // 窗口大小改变时，如果变成桌面视图且菜单打开，自动关闭
-    window.addEventListener('resize', () => {
-        if (window.innerWidth > 768 && navLinks.classList.contains('active')) {
-            closeMenu();
-        }
-    });
-}
-
-// 在 DOMContentLoaded 事件中调用
-document.addEventListener('DOMContentLoaded', () => {
-    initMobileMenu();
-});
 </script>
+<script src="js/common.js"></script>
 </body>
 </html>

@@ -1,0 +1,446 @@
+/* ============================================================
+   LemoClaw 公共样式 common.css
+   三个页面（首页 / 知识库 / 插件平台）共享的结构与装饰样式。
+   主题色通过各页面 <style> 中的 :root 变量覆盖，保持各自的配色。
+   ============================================================ */
+
+/* ========== 基础重置 ========== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    background: var(--bg-html, #05070C);
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background: transparent;
+    color: var(--text, #EDF2F9);
+    line-height: 1.5;
+    scroll-behavior: smooth;
+    overflow-x: hidden;
+    position: relative;
+}
+
+/* ========== 背景微网格 ========== */
+body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+        linear-gradient(rgba(255, 255, 255, var(--grid-alpha, 0.04)) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, var(--grid-alpha, 0.04)) 1px, transparent 1px);
+    background-size: 50px 50px;
+    mask-image: radial-gradient(ellipse 80% 80% at 50% 30%, black 30%, transparent 70%);
+    -webkit-mask-image: radial-gradient(ellipse 80% 80% at 50% 30%, black 30%, transparent 70%);
+}
+
+/* ========== 背景流星光柱画布 ========== */
+.meteor-canvas {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* ========== 背景三个渐变光球 ========== */
+.bg-orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(140px);
+    opacity: 0.55;
+    pointer-events: none;
+    z-index: 0;
+}
+.bg-orb-1 {
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(240, 101, 67, 0.9) 0%, rgba(240, 101, 67, 0.3) 40%, transparent 70%);
+    top: -20%;
+    left: -12%;
+    animation: orbFloat1 14s ease-in-out infinite;
+}
+.bg-orb-2 {
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(80, 120, 255, 0.8) 0%, rgba(80, 120, 255, 0.25) 40%, transparent 70%);
+    top: 30%;
+    right: -12%;
+    animation: orbFloat2 18s ease-in-out infinite;
+}
+.bg-orb-3 {
+    width: 440px;
+    height: 440px;
+    background: radial-gradient(circle, rgba(160, 100, 240, 0.75) 0%, rgba(160, 100, 240, 0.2) 40%, transparent 70%);
+    bottom: -15%;
+    left: 25%;
+    animation: orbFloat3 16s ease-in-out infinite;
+}
+
+@keyframes orbFloat1 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    25% { transform: translate(80px, 60px) scale(1.08); }
+    50% { transform: translate(30px, -40px) scale(0.94); }
+    75% { transform: translate(-50px, 20px) scale(1.05); }
+}
+@keyframes orbFloat2 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    25% { transform: translate(-70px, -50px) scale(1.06); }
+    50% { transform: translate(40px, 70px) scale(0.92); }
+    75% { transform: translate(-20px, -30px) scale(1.04); }
+}
+@keyframes orbFloat3 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    25% { transform: translate(60px, -70px) scale(1.07); }
+    50% { transform: translate(-50px, 30px) scale(0.95); }
+    75% { transform: translate(20px, 50px) scale(1.03); }
+}
+
+/* 确保主要内容在光球之上 */
+.navbar, main, .footer, #app {
+    position: relative;
+    z-index: 1;
+}
+
+/* ========== 自定义滚动条 ========== */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: #11141F;
+}
+::-webkit-scrollbar-thumb {
+    background: #2F3A5C;
+    border-radius: 10px;
+}
+
+/* ========== 容器 ========== */
+.container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 32px;
+}
+
+/* ========== 导航 ========== */
+.navbar {
+    padding: 18px 0;
+    border-bottom: 1px solid var(--nav-border, #1A1F2E);
+    backdrop-filter: blur(12px);
+    background: var(--nav-bg, rgba(5, 7, 12, 0.85));
+    position: sticky;
+    top: 0;
+    z-index: var(--nav-z, 100);
+}
+.nav-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+.logo-area {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.logo-icon {
+    background: linear-gradient(135deg, #303652, #1d2133);
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #383e53;
+    font-size: 22px;
+    box-shadow: 0 6px 16px var(--brand-glow, rgba(240, 101, 67, 0.3));
+}
+.logo-text {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    background: var(--logo-text-grad, linear-gradient(120deg, #FFFFFF, #FFB485));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+.badge, .logo-badge {
+    background: var(--badge-bg, #1E293B);
+    padding: 4px 12px;
+    border-radius: 40px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--accent, #FFB485);
+}
+.nav-links {
+    display: flex;
+    gap: 28px;
+    align-items: center;
+}
+.nav-links a {
+    color: var(--nav-link, #B9C3E6);
+    text-decoration: none;
+    font-weight: 500;
+    transition: 0.2s;
+    font-size: 15px;
+}
+.nav-links a:hover, .nav-links a.active {
+    color: white;
+}
+.btn-outline {
+    border: 1px solid #3E4A6F;
+    background: transparent;
+    padding: 8px 20px;
+    border-radius: 40px;
+    font-weight: 500;
+    cursor: pointer;
+    color: #EFF3F8;
+}
+.btn-primary {
+    background: linear-gradient(95deg, var(--brand, #FF8C5A), var(--brand-2, #F06543));
+    border: none;
+    padding: 8px 31.3px;
+    border-radius: 40px;
+    font-weight: 600;
+    color: white;
+    cursor: pointer;
+    transition: 0.2s;
+    box-shadow: 0 4px 12px var(--brand-glow, rgba(240, 101, 67, 0.4));
+    position: relative;
+    overflow: hidden;
+}
+.btn-primary:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.05);
+}
+
+/* ========== CTA 微光扫过动画 ========== */
+.btn-primary::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -75%;
+    width: 50%;
+    height: 200%;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.08) 30%,
+        rgba(255, 255, 255, 0.3) 50%,
+        rgba(255, 255, 255, 0.08) 70%,
+        transparent 100%
+    );
+    transform: skewX(-25deg);
+    animation: shimmer 2.8s ease-in-out infinite;
+    pointer-events: none;
+}
+@keyframes shimmer {
+    0% { left: -75%; }
+    100% { left: 125%; }
+}
+
+/* ========== Hero 区域（基础） ========== */
+.hero {
+    text-align: center;
+}
+.hero h1 {
+    font-weight: 800;
+    background: var(--hero-text-grad, linear-gradient(135deg, #FFFFFF, #FFC7A2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+.hero p {
+    font-size: 18px;
+    color: var(--muted, #99A4C9);
+    max-width: 700px;
+    margin: 20px auto 28px;
+}
+
+/* ========== 滚动渐显 · 淡入上浮 ========== */
+.reveal {
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 0.7s cubic-bezier(0.22, 0.61, 0.36, 1), transform 0.7s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+.reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* ========== Toast 提示 ========== */
+.toast-msg {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1F2A3F;
+    backdrop-filter: blur(12px);
+    padding: 12px 28px;
+    border-radius: 60px;
+    color: white;
+    font-weight: 500;
+    z-index: 2000;
+    border-left: 4px solid var(--brand, #FF8C5A);
+    pointer-events: none;
+    transition: opacity 0.2s;
+}
+
+/* ========== 页脚 ========== */
+.footer {
+    border-top: 1px solid #181E2C;
+    padding: 40px 0;
+    text-align: center;
+    color: #6C738F;
+    font-size: 14px;
+}
+
+/* ========== 移动端导航（汉堡菜单 + 遮罩） ========== */
+.menu-toggle {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 28px;
+    height: 20px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    z-index: 1002;
+    position: relative;
+}
+.menu-toggle span {
+    width: 100%;
+    height: 2px;
+    background: #EFF3F8;
+    border-radius: 2px;
+    transition: all 0.3s ease;
+}
+.menu-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+/* 移动端断点 */
+@media (max-width: 768px) {
+    .navbar {
+        padding: 12px 0;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+    }
+    .nav-inner {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        position: relative;
+        gap: 12px;
+    }
+    .logo-area {
+        flex-shrink: 0;
+    }
+    .logo-icon {
+        width: 32px;
+        height: 32px;
+        font-size: 18px;
+    }
+    .logo-text {
+        font-size: 20px;
+    }
+    .badge, .logo-badge {
+        font-size: 10px;
+        padding: 2px 8px;
+    }
+    .nav-links {
+        position: fixed;
+        top: 0;
+        right: -280px;
+        width: 260px;
+        height: 100vh;
+        background: rgba(10, 12, 18, 0.98);
+        backdrop-filter: blur(16px);
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: flex-start;
+        padding: 80px 24px 24px;
+        gap: 20px;
+        transition: right 0.3s ease;
+        z-index: 1001;
+        border-left: 1px solid #2A2F42;
+        box-shadow: -5px 0 30px rgba(0, 0, 0, 0.5);
+    }
+    .nav-links.active {
+        right: 0;
+    }
+    .nav-links a {
+        font-size: 16px;
+        padding: 8px 0;
+        width: 100%;
+        border-bottom: 1px solid #2A2F42;
+    }
+    .nav-links button {
+        width: 100%;
+        margin-top: 8px;
+    }
+    .menu-toggle.active span:nth-child(1) {
+        transform: translateY(9px) rotate(45deg);
+    }
+    .menu-toggle.active span:nth-child(2) {
+        opacity: 0;
+    }
+    .menu-toggle.active span:nth-child(3) {
+        transform: translateY(-9px) rotate(-45deg);
+    }
+    .menu-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+    .nav-links .btn-outline-light,
+    .nav-links .btn-outline {
+        background: rgba(30, 36, 56, 0.9);
+        border: 1px solid #3E4A6B;
+    }
+    .nav-links .btn-primary {
+        background: linear-gradient(95deg, var(--brand, #FF8C5A), var(--brand-2, #F06543));
+    }
+}
+
+/* 平板设备适配 */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .nav-links {
+        gap: 20px;
+    }
+    .nav-links a {
+        font-size: 14px;
+    }
+    .btn-outline-light, .btn-outline, .btn-primary {
+        padding: 6px 16px;
+        font-size: 13px;
+    }
+}
+
+/* 桌面端默认隐藏汉堡菜单 */
+@media (min-width: 769px) {
+    .menu-toggle {
+        display: none;
+    }
+    .menu-overlay {
+        display: none;
+    }
+}
